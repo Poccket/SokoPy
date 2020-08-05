@@ -8,7 +8,7 @@ import json
 # undefined     , undefined    , undefined , undefined
 visTable = ["\n", "  ", "::", ":)",
             "##", "[]", "<>", "[]",
-            ":)_", "  ", "  ", "  ",
+            "  ", "  ", "  ", "  ",
             "  ", "  ", "  ", "  "]
 # index 0: canClip
 #   1 = player can stand here

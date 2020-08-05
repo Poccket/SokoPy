@@ -3,7 +3,26 @@
 		"title": "Sokoban (1982 - NEC PC-8801)",
 		"desc": "The original levels from Hiroyuki Imabayashi's Sokoban",
 		"lvls": {
-			"Level 1": "1.lvl"
+			"Level 1" : "01.lvl",
+			"Level 2" : "02.lvl",
+			"Level 3" : "03.lvl",
+			"Level 4" : "04.lvl",
+			"Level 5" : "05.lvl",
+			"Level 6" : "06.lvl",
+			"Level 7" : "07.lvl",
+			"Level 8" : "08.lvl",
+			"Level 9" : "09.lvl",
+			"Level 10": "10.lvl",
+			"Level 11": "11.lvl",
+			"Level 12": "12.lvl",
+			"Level 13": "13.lvl",
+			"Level 14": "14.lvl",
+			"Level 15": "15.lvl",
+			"Level 16": "16.lvl",
+			"Level 17": "17.lvl",
+			"Level 18": "18.lvl",
+			"Level 19": "19.lvl",
+			"Level 20": "20.lvl"
 		}
 	}
 }
