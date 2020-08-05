@@ -7,6 +7,16 @@ import level as lvl
 def main(stdscr):
     curses.curs_set(0)
 
+    curses.init_pair(1, curses.COLOR_RED    , curses.COLOR_BLACK )
+    curses.init_pair(2, curses.COLOR_GREEN  , curses.COLOR_BLACK )
+    curses.init_pair(3, curses.COLOR_BLUE   , curses.COLOR_BLACK )
+    curses.init_color(20, 750, 750, 0)
+    curses.init_pair(4, curses.COLOR_BLACK  , 20                 )
+    curses.init_pair(5, curses.COLOR_YELLOW , curses.COLOR_BLACK )
+    curses.init_color(21, 0, 250, 0)
+    curses.init_pair(6, 21                  , curses.COLOR_BLACK )
+    curses.init_pair(7, 20                  , curses.COLOR_BLACK )
+
     inp = ""
     lvlpack_list = lvl.get_levelpacks()
     lvlpack_list["tut"] = {"title": "Tutorial"}
@@ -26,6 +36,7 @@ def main(stdscr):
             length = 4
             goal_visible = False
             stdscr.addstr(1, 4, "Arrow keys to move, R to restart, Enter to exit", curses.A_REVERSE)
+            stdscr.addstr(2, 4, "Get the boxes [] to the goal <> to win!", curses.A_REVERSE)
             for y, row in enumerate(mapContent):
                 if not goal_visible:
                     goal_visible = 6 in row
@@ -34,11 +45,15 @@ def main(stdscr):
                         playerLoc = [y, x]
                         mapContent[y][x] = 2
                     if [y, x] == playerLoc:
-                        stdscr.addstr(3+y, 4+x*2, lvl.visTable[3], curses.A_REVERSE)
-                    elif item in (2, 7):
-                        stdscr.addstr(3+y, 4+x*2, lvl.visTable[item], curses.A_DIM)
+                        stdscr.addstr(4+y, 4+x*2, lvl.visTable[3], curses.color_pair(4))
+                    elif item == 2:
+                        stdscr.addstr(4+y, 4+x*2, lvl.visTable[item], curses.color_pair(6))
+                    elif item == 5:
+                        stdscr.addstr(4+y, 4+x*2, lvl.visTable[item], curses.color_pair(5))
+                    elif item == 7:
+                        stdscr.addstr(4+y, 4+x*2, lvl.visTable[item], curses.color_pair(7))
                     else:
-                        stdscr.addstr(3+y, 4+x*2, lvl.visTable[item])
+                        stdscr.addstr(4+y, 4+x*2, lvl.visTable[item])
             stdscr.refresh()
             if not goal_visible:
                 stdscr.addstr(2+round(len(mapContent)/2), 4, "(:        GOOD JOB! YOU WON!       :)", curses.A_REVERSE)
@@ -117,9 +132,10 @@ def main(stdscr):
         while ThirdVariable:
             stdscr.clear()
             for index, pack in zip(range(len(packdata['lvls'])), packdata['lvls']):
-                stdscr.addstr(index+4, 2, ("> " if index == sbelect else "  ") + pack)
-            stdscr.addstr(1, 2, packdata['title'])
-            stdscr.addstr(2, 3, packdata['desc'])
+                stdscr.addstr(index+4, 2, "> " if index == sbelect else "- ", curses.color_pair(2))
+                stdscr.addstr(index+4, 4, pack, curses.color_pair(1))
+            stdscr.addstr(1, 4, packdata['title'], curses.A_REVERSE)
+            stdscr.addstr(2, 4, packdata['desc'], curses.A_REVERSE)
             stdscr.refresh()
             inp = stdscr.getkey()
             if inp == "KEY_DOWN":
@@ -136,7 +152,10 @@ def main(stdscr):
     while running:
         stdscr.clear()
         for index, pack in zip(range(len(lvlpack_list)), lvlpack_list):
-            stdscr.addstr(index+1, 2, ("> " if index == select else "  ") + lvlpack_list[pack]['title'])
+            stdscr.addstr(index+4, 2, "> " if index == select else "- ", curses.color_pair(2))
+            stdscr.addstr(index+4, 4, lvlpack_list[pack]['title'], curses.color_pair(1))
+        stdscr.addstr(1, 4, "SokoPy v0.1", curses.A_REVERSE)
+        stdscr.addstr(2, 4, "A Sokoban clone made in Python", curses.A_REVERSE)
         stdscr.refresh()
 
         inp = stdscr.getkey()
