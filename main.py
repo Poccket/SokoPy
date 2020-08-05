@@ -131,12 +131,12 @@ def main(stdscr):
         while ThirdVariable:
             stdscr.clear()
             entriesBritten = 0
-            for index, pack in zip(range(len(packdata['lvls'])), packdata['lvls']):
-                if len(packdata['lvls']) > 7:
+            for index, pack in zip(range(len(packdata['lvls'])+1), ["Back to menu..."] + list(packdata['lvls'].keys())):
+                if len(packdata['lvls'])+1 > 7:
                     if index < (sbelect-3):
-                        if (sbelect+3) < len(packdata['lvls']):
+                        if (sbelect+3) < len(packdata['lvls'])+1:
                             continue
-                        elif index < (len(packdata['lvls'])-7):
+                        elif index < (len(packdata['lvls'])-6):
                             continue
                     if entriesBritten >= 7:
                         break
@@ -145,15 +145,18 @@ def main(stdscr):
                 stdscr.addstr(entriesBritten+3, 4, pack, curses.color_pair(3 if index == sbelect else 1))
             stdscr.addstr(1, 4, packdata['title'], curses.A_REVERSE)
             stdscr.addstr(2, 4, packdata['desc'], curses.A_REVERSE)
-            stdscr.addstr(12, 4, "Up/Down to move the cursor, Enter to select, R to go back", curses.A_REVERSE)
+            stdscr.addstr(12, 4, "Up/Down to move the cursor, Enter to select", curses.A_REVERSE)
             stdscr.refresh()
             inp = stdscr.getkey()
             if inp == "KEY_DOWN":
-                sbelect = (0 if sbelect >= len(packdata['lvls'])-1 else sbelect+1)
+                sbelect = (0 if sbelect >= len(packdata['lvls']) else sbelect+1)
             elif inp == "KEY_UP":
-                sbelect = (len(packdata['lvls'])-1 if sbelect <= 0 else sbelect-1)
+                sbelect = (len(packdata['lvls']) if sbelect <= 0 else sbelect-1)
             elif inp == "\n":
-                load_lvl(lvlpack + "/" + list(packdata['lvls'].values())[sbelect])
+                if sbelect == 0:
+                    ThirdVariable = False
+                else:
+                    load_lvl(lvlpack + "/" + list(packdata['lvls'].values())[sbelect-1])
             elif inp == "r":
                 ThirdVariable = False
 
@@ -175,7 +178,7 @@ def main(stdscr):
             stdscr.addstr(entriesWritten+3, 4, lvlpack_list[pack]['title'], curses.color_pair(3 if index == select else 1))
         stdscr.addstr(1, 4, "SokoPy v0.1", curses.A_REVERSE)
         stdscr.addstr(2, 4, "A Sokoban clone made in Python", curses.A_REVERSE)
-        stdscr.addstr(12, 4, "Up/Down to move the cursor, Enter to select, R to go back", curses.A_REVERSE)
+        stdscr.addstr(12, 4, "Up/Down to move the cursor, Enter to select", curses.A_REVERSE)
         stdscr.refresh()
 
         inp = stdscr.getkey()
