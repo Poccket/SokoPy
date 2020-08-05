@@ -1,0 +1,9 @@
+{
+	"levelpack": {
+		"title": "Sokoban (1982 - NEC PC-8801)",
+		"desc": "The original levels from Hiroyuki Imabayashi's Sokoban",
+		"lvls": {
+			"Level 1": "1.lvl"
+		}
+	}
+}
