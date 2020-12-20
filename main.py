@@ -23,7 +23,7 @@ def main(stdscr):
     lvlpack_list["quit"] = {"title": "Exit game"}
     select = 0
     running = True
-
+    is_tut = False
 
     def load_lvl(filedir: str):
         mapContent = lvl.decode_lvl("levels/" + filedir)
@@ -39,12 +39,15 @@ def main(stdscr):
             length = 4
             goal_visible = False
             stdscr.addstr(1, 4, "Arrow keys to move, R to restart, Enter to exit", curses.A_REVERSE)
-            stdscr.addstr(2, 4, "Get the boxes    to the goal    to win!", curses.A_REVERSE)
-            stdscr.addstr(2, 18, lvl.visTable[5], curses.color_pair(5))
-            stdscr.addstr(2, 33, lvl.visTable[6], curses.color_pair(2))
+            if is_tut:
+                stdscr.addstr(2, 4, "Get the boxes    to the goal    to win!", curses.A_REVERSE)
+                stdscr.addstr(2, 18, lvl.visTable[5], curses.color_pair(5))
+                stdscr.addstr(2, 33, lvl.visTable[6], curses.color_pair(2))
+            stdscr.addstr((4 if is_tut else 2), 4, ("Moves: " + str(moves).ljust(6) + " | Pushes: " + str(pushes).ljust(6)), curses.A_REVERSE)
 
             bl_width = lvl.visWidth
             bl_height = lvl.visHeight
+            margin = 6 if is_tut else 4
             for y, row in enumerate(mapContent):
                 if not goal_visible:
                     goal_visible = 6 in row
@@ -53,27 +56,27 @@ def main(stdscr):
                         playerLoc = [y, x]
                         mapContent[y][x] = 2
                     if [y, x] == playerLoc:
-                        stdscr.addstr(4+y*bl_height, 4+x*bl_width, lvl.visTable[3], curses.color_pair(4))
+                        stdscr.addstr(margin+y*bl_height, 4+x*bl_width, lvl.visTable[3], curses.color_pair(4))
                     elif item == 2:
-                        stdscr.addstr(4+y*bl_height, 4+x*bl_width, lvl.visTable[item], curses.color_pair(6))
+                        stdscr.addstr(margin+y*bl_height, 4+x*bl_width, lvl.visTable[item], curses.color_pair(6))
 
                     elif item == 5:
-                        stdscr.addstr(4+y*bl_height, 4+x*bl_width, lvl.visTable[item], curses.color_pair(5))
+                        stdscr.addstr(margin+y*bl_height, 4+x*bl_width, lvl.visTable[item], curses.color_pair(5))
                     elif item == 6:
-                        stdscr.addstr(4+y*bl_height, 4+x*bl_width, lvl.visTable[item], curses.color_pair(2))
+                        stdscr.addstr(margin+y*bl_height, 4+x*bl_width, lvl.visTable[item], curses.color_pair(2))
                     elif item == 7:
-                        stdscr.addstr(4+y*bl_height, 4+x*bl_width, lvl.visTable[item], curses.color_pair(7))
+                        stdscr.addstr(margin+y*bl_height, 4+x*bl_width, lvl.visTable[item], curses.color_pair(7))
                     else:
-                        stdscr.addstr(4+y*bl_height, 4+x*bl_width, lvl.visTable[item])
+                        stdscr.addstr(margin+y*bl_height, 4+x*bl_width, lvl.visTable[item])
             stdscr.refresh()
             if not goal_visible:
                 if not finished:
                     finished = True
                     final_moves = moves
                     final_pushes = pushes
-                stdscr.addstr(2+round(len(mapContent)/2), 4, "!!        GOOD JOB! YOU WON!       !!", curses.A_REVERSE)
-                stdscr.addstr(3+round(len(mapContent)/2), 4, (" TOTAL PUSHES: " + str(final_pushes).ljust(4) + ("TOTAL MOVES: " + str(final_moves)).rjust(17) + " "), curses.A_REVERSE)
-                stdscr.addstr(5+round(len(mapContent)/2), 4, "    PRESS ENTER TO RETURN TO MENU    ", curses.A_REVERSE)
+                stdscr.addstr((margin-2)+round(len(mapContent)/2), 4, "!!        GOOD JOB! YOU WON!       !!", curses.A_REVERSE)
+                stdscr.addstr((margin-1)+round(len(mapContent)/2), 4, (" TOTAL PUSHES: " + str(final_pushes).ljust(4) + ("TOTAL MOVES: " + str(final_moves)).rjust(17) + " "), curses.A_REVERSE)
+                stdscr.addstr((margin+1)+round(len(mapContent)/2), 4, "    PRESS ENTER TO RETURN TO MENU    ", curses.A_REVERSE)
             inp = stdscr.getkey()
             if inp == "KEY_DOWN":
                 if (not clip) or (lvl.atrTable[mapContent[playerLoc[0]+1][playerLoc[1]]][0] == "1"):
@@ -202,6 +205,7 @@ def main(stdscr):
 
 
     while running:
+        is_tut = False
         stdscr.clear()
         entriesWritten = 0
         for index, pack in zip(range(len(lvlpack_list)), lvlpack_list):
@@ -230,6 +234,7 @@ def main(stdscr):
             if select == len(lvlpack_list)-1:
                 running = not running
             elif select == len(lvlpack_list)-2:
+                is_tut = True
                 load_lvl("tutorial.lvl")
                 select = 0
             else:
