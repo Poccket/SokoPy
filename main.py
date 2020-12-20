@@ -28,6 +28,9 @@ def main(stdscr):
     def load_lvl(filedir: str):
         mapContent = lvl.decode_lvl("levels/" + filedir)
         playerLoc = [-1, -1]
+        moves = 0
+        pushes = 0
+        finished = False
         gameRunning = True
         clip = True
         while gameRunning:
@@ -64,15 +67,23 @@ def main(stdscr):
                         stdscr.addstr(4+y*bl_height, 4+x*bl_width, lvl.visTable[item])
             stdscr.refresh()
             if not goal_visible:
-                stdscr.addstr(2+round(len(mapContent)/2), 4, "(:        GOOD JOB! YOU WON!       :)", curses.A_REVERSE)
-                stdscr.addstr(3+round(len(mapContent)/2), 4, "(:  PRESS ENTER TO RETURN TO MENU  :)", curses.A_REVERSE)
+                if not finished:
+                    finished = True
+                    final_moves = moves
+                    final_pushes = pushes
+                stdscr.addstr(2+round(len(mapContent)/2), 4, "!!        GOOD JOB! YOU WON!       !!", curses.A_REVERSE)
+                stdscr.addstr(3+round(len(mapContent)/2), 4, (" TOTAL PUSHES: " + str(final_pushes).ljust(4) + ("TOTAL MOVES: " + str(final_moves)).rjust(17) + " "), curses.A_REVERSE)
+                stdscr.addstr(5+round(len(mapContent)/2), 4, "    PRESS ENTER TO RETURN TO MENU    ", curses.A_REVERSE)
             inp = stdscr.getkey()
             if inp == "KEY_DOWN":
                 if (not clip) or (lvl.atrTable[mapContent[playerLoc[0]+1][playerLoc[1]]][0] == "1"):
                     playerLoc[0] += 1
+                    moves += 1
                 elif lvl.atrTable[mapContent[playerLoc[0]+1][playerLoc[1]]][1] == "1":
                     if lvl.atrTable[mapContent[playerLoc[0]+2][playerLoc[1]]][0] == "1":
                         playerLoc[0] += 1
+                        moves += 1
+                        pushes += 1
                         if mapContent[playerLoc[0]+1][playerLoc[1]] == 6:
                             mapContent[playerLoc[0]+1][playerLoc[1]] = 7
                         else:
@@ -84,9 +95,12 @@ def main(stdscr):
             elif inp == "KEY_UP":
                 if (not clip) or (lvl.atrTable[mapContent[playerLoc[0]-1][playerLoc[1]]][0] == "1"):
                     playerLoc[0] -= 1
+                    moves += 1
                 elif lvl.atrTable[mapContent[playerLoc[0]-1][playerLoc[1]]][1] == "1":
                     if lvl.atrTable[mapContent[playerLoc[0]-2][playerLoc[1]]][0] == "1":
                         playerLoc[0] -= 1
+                        moves += 1
+                        pushes += 1
                         if mapContent[playerLoc[0]-1][playerLoc[1]] == 6:
                             mapContent[playerLoc[0]-1][playerLoc[1]] = 7
                         else:
@@ -98,9 +112,12 @@ def main(stdscr):
             elif inp == "KEY_RIGHT":
                 if (not clip) or (lvl.atrTable[mapContent[playerLoc[0]][playerLoc[1]+1]][0] == "1"):
                     playerLoc[1] += 1
+                    moves += 1
                 elif lvl.atrTable[mapContent[playerLoc[0]][playerLoc[1]+1]][1] == "1":
                     if lvl.atrTable[mapContent[playerLoc[0]][playerLoc[1]+2]][0] == "1":
                         playerLoc[1] += 1
+                        moves += 1
+                        pushes += 1
                         if mapContent[playerLoc[0]][playerLoc[1]+1] == 6:
                             mapContent[playerLoc[0]][playerLoc[1]+1] = 7
                         else:
@@ -112,9 +129,12 @@ def main(stdscr):
             elif inp == "KEY_LEFT":
                 if (not clip) or (lvl.atrTable[mapContent[playerLoc[0]][playerLoc[1]-1]][0] == "1"):
                     playerLoc[1] -= 1
+                    moves += 1
                 elif lvl.atrTable[mapContent[playerLoc[0]][playerLoc[1]-1]][1] == "1":
                     if lvl.atrTable[mapContent[playerLoc[0]][playerLoc[1]-2]][0] == "1":
                         playerLoc[1] -= 1
+                        moves += 1
+                        pushes += 1
                         if mapContent[playerLoc[0]][playerLoc[1]-1] == 6:
                             mapContent[playerLoc[0]][playerLoc[1]-1] = 7
                         else:
@@ -126,8 +146,20 @@ def main(stdscr):
             elif inp == "r":
                 mapContent = lvl.decode_lvl("levels/" + filedir)
                 playerLoc = [-1, -1]
+                moves = 0
+                pushes = 0
+                clip = True
             elif inp == "p":
-                clip = False
+                if clip:
+                    clip = False
+                    moves = 9000
+                    pushes = 1337
+                else:
+                    mapContent = lvl.decode_lvl("levels/" + filedir)
+                    playerLoc = [-1, -1]
+                    moves = 0
+                    pushes = 0
+                    clip = True
             elif inp == "\n":
                 gameRunning = not gameRunning
 
