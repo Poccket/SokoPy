@@ -15,6 +15,8 @@ I have not yet added a proper level creator, however, it's fairly simple.
 
 Each block in a level is a 4bit character. This allows for a hex editor to show the level easily by representing each block as a single hexadecimal character. All the blocks are below:
 
+|Tables|need|headers|...|
+|---|---|---|---|
 | EOL | Out of bounds | Walkable | Player spawn |
 | Wall | Crate spawn | Crate goal | Crate (on goal) |
 | Player (on goal) | Null | Null | Null |
