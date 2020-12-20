@@ -36,7 +36,12 @@ def main(stdscr):
             length = 4
             goal_visible = False
             stdscr.addstr(1, 4, "Arrow keys to move, R to restart, Enter to exit", curses.A_REVERSE)
-            stdscr.addstr(2, 4, "Get the boxes [] to the goal <> to win!", curses.A_REVERSE)
+            stdscr.addstr(2, 4, "Get the boxes    to the goal    to win!", curses.A_REVERSE)
+            stdscr.addstr(2, 18, lvl.visTable[5], curses.color_pair(5))
+            stdscr.addstr(2, 33, lvl.visTable[6], curses.color_pair(2))
+
+            bl_width = lvl.visWidth
+            bl_height = lvl.visHeight
             for y, row in enumerate(mapContent):
                 if not goal_visible:
                     goal_visible = 6 in row
@@ -45,15 +50,18 @@ def main(stdscr):
                         playerLoc = [y, x]
                         mapContent[y][x] = 2
                     if [y, x] == playerLoc:
-                        stdscr.addstr(4+y, 4+x*2, lvl.visTable[3], curses.color_pair(4))
+                        stdscr.addstr(4+y*bl_height, 4+x*bl_width, lvl.visTable[3], curses.color_pair(4))
                     elif item == 2:
-                        stdscr.addstr(4+y, 4+x*2, lvl.visTable[item], curses.color_pair(6))
+                        stdscr.addstr(4+y*bl_height, 4+x*bl_width, lvl.visTable[item], curses.color_pair(6))
+
                     elif item == 5:
-                        stdscr.addstr(4+y, 4+x*2, lvl.visTable[item], curses.color_pair(5))
+                        stdscr.addstr(4+y*bl_height, 4+x*bl_width, lvl.visTable[item], curses.color_pair(5))
+                    elif item == 6:
+                        stdscr.addstr(4+y*bl_height, 4+x*bl_width, lvl.visTable[item], curses.color_pair(2))
                     elif item == 7:
-                        stdscr.addstr(4+y, 4+x*2, lvl.visTable[item], curses.color_pair(7))
+                        stdscr.addstr(4+y*bl_height, 4+x*bl_width, lvl.visTable[item], curses.color_pair(7))
                     else:
-                        stdscr.addstr(4+y, 4+x*2, lvl.visTable[item])
+                        stdscr.addstr(4+y*bl_height, 4+x*bl_width, lvl.visTable[item])
             stdscr.refresh()
             if not goal_visible:
                 stdscr.addstr(2+round(len(mapContent)/2), 4, "(:        GOOD JOB! YOU WON!       :)", curses.A_REVERSE)

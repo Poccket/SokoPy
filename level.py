@@ -6,10 +6,12 @@ import json
 # wall          , movable crate, crate goal, crate on goal
 # player on goal, undefined    , undefined , undefined
 # undefined     , undefined    , undefined , undefined
-visTable = ["\n", "  ", "::", ":)",
-            "##", "[]", "<>", "[]",
+visTable = ["\n", "  ", "::", "=)",
+            "▓▒", "▓█", "╳╳", "▓█",
             "  ", "  ", "  ", "  ",
             "  ", "  ", "  ", "  "]
+visHeight = 1
+visWidth = 2
 # index 0: canClip
 #   1 = player can stand here
 #   0 = player cannot stand here
