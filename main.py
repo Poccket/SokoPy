@@ -72,10 +72,10 @@ def main(stdscr):
             if not goal_visible:
                 if not finished:
                     finished = True
-                    final_moves = moves
-                    final_pushes = pushes
+                    final_score = [moves, pushes]
+
                 stdscr.addstr((margin-2)+round(len(mapContent)/2), 4, "!!        GOOD JOB! YOU WON!       !!", curses.A_REVERSE)
-                stdscr.addstr((margin-1)+round(len(mapContent)/2), 4, (" TOTAL PUSHES: " + str(final_pushes).ljust(4) + ("TOTAL MOVES: " + str(final_moves)).rjust(17) + " "), curses.A_REVERSE)
+                stdscr.addstr((margin-1)+round(len(mapContent)/2), 4, (" TOTAL PUSHES: " + str(final_score[1]).ljust(4) + ("TOTAL MOVES: " + str(final_score[0])).rjust(17) + " "), curses.A_REVERSE)
                 stdscr.addstr((margin+1)+round(len(mapContent)/2), 4, "    PRESS ENTER TO RETURN TO MENU    ", curses.A_REVERSE)
             inp = stdscr.getkey()
             if inp == "KEY_DOWN":

@@ -6,7 +6,7 @@ import json
 # wall          , movable crate, crate goal, crate on goal
 # player on goal, undefined    , undefined , undefined
 # undefined     , undefined    , undefined , undefined
-visTable = ["\n", "  ", "::", "=)",
+visTable = ["\n", "  ", "  ", "=)",
             "▓▒", "▓█", "╳╳", "▓█",
             "  ", "  ", "  ", "  ",
             "  ", "  ", "  ", "  "]
