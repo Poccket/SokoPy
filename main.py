@@ -55,6 +55,9 @@ def main(stdscr):
                     if item == 3:
                         playerLoc = [y, x]
                         mapContent[y][x] = 2
+                    elif item == 8:
+                        playerLoc = [y, x]
+                        mapContent[y][x] = 6
                     if [y, x] == playerLoc:
                         stdscr.addstr(margin+y*bl_height, 4+x*bl_width, lvl.visTable[3], curses.color_pair(4))
                     elif item == 2:
