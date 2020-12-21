@@ -46,7 +46,7 @@
 			"Level 41"  : "041.lvl",
 			"Level 42"  : "042.lvl",
 			"Level 43"  : "043.lvl",
-			"Level 44"  : "044.lvl",
+			"Level 44 - Duh!"  : "044.lvl",
 			"Level 45"  : "045.lvl",
 			"Level 46"  : "046.lvl",
 			"Level 47"  : "047.lvl",
@@ -103,7 +103,7 @@
 			"Level 98"  : "098.lvl",
 			"Level 99"  : "099.lvl",
 			"Level 100" : "100.lvl",
-			"Level 101" : "101.lvl",
+			"Level 101 - Lockdown" : "101.lvl",
 			"Level 102" : "102.lvl",
 			"Level 103" : "103.lvl",
 			"Level 104" : "104.lvl",
@@ -150,14 +150,14 @@
 			"Level 145" : "145.lvl",
 			"Level 146" : "146.lvl",
 			"Level 147" : "147.lvl",
-			"Level 148" : "148.lvl",
-			"Level 149" : "149.lvl",
-			"Level 150" : "150.lvl",
-			"Level 151" : "151.lvl",
+			"Level 148 from (Original 18)" : "148.lvl",
+			"Level 149 from (Boxxle 43)" : "149.lvl",
+			"Level 150 from (Original 47)" : "150.lvl",
+			"Level 151 from (Original 47)" : "151.lvl",
 			"Level 152" : "152.lvl",
 			"Level 153" : "153.lvl",
-			"Level 154" : "154.lvl",
-			"Level 155" : "155.lvl"
+			"Level 154 - Take the long way home." : "154.lvl",
+			"Level 155 - The Dungeon" : "155.lvl"
 		}
 	}
 }
