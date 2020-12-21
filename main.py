@@ -50,7 +50,7 @@ def main(stdscr):
             margin = 6 if is_tut else 4
             for y, row in enumerate(mapContent):
                 if not goal_visible:
-                    goal_visible = 6 in row
+                    goal_visible = (6 in row) or (8 in row)
                 for x, item in enumerate(row):
                     if item == 3:
                         playerLoc = [y, x]
