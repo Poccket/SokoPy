@@ -220,7 +220,7 @@ def main(stdscr):
             entriesWritten += 1
             stdscr.addstr(entriesWritten+3, 2, "> " if index == select else "- ", curses.color_pair(2))
             stdscr.addstr(entriesWritten+3, 4, lvlpack_list[pack]['title'], curses.color_pair(3 if index == select else 1))
-        stdscr.addstr(1, 4, "SokoPy v0.1", curses.A_REVERSE)
+        stdscr.addstr(1, 4, "SokoPy v1.0", curses.A_REVERSE)
         stdscr.addstr(2, 4, "A Sokoban clone made in Python", curses.A_REVERSE)
         stdscr.addstr(12, 4, "Up/Down to move the cursor, Enter to select", curses.A_REVERSE)
         stdscr.refresh()
