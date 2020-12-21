@@ -17,7 +17,7 @@ def bitstring_to_bytes(s):
         v >>= 8
     return bytes(b[::-1])
 
-with open("Put a file here!", "r") as f:
+with open("Sasquatch.txt", "r") as f:
 	data = f.readlines()
 
 started = False
@@ -32,9 +32,9 @@ for line in data:
 				lvl_binary += "0000"
 			if len(lvl_binary) % 8:
 				lvl_binary += "0000"
-			print(lvl_binary)
+			# print(lvl_binary)
 			to_write = bitstring_to_bytes(lvl_binary)
-			with open(str(lvl_num).zfill(3) + ".lvl", "w+b") as out:
+			with open(str(lvl_num).zfill(2) + ".lvl", "w+b") as out:
 				out.write(to_write)
 			lvl_num += 1
 			lvl = []
