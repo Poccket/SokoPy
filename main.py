@@ -19,8 +19,9 @@ def main(stdscr):
 
     inp = ""
     lvlpack_list = lvl.get_levelpacks()
-    lvlpack_list["tut"] = {"title": "Tutorial"}
-    lvlpack_list["quit"] = {"title": "Exit game"}
+    menu_items = lvl.menu_packs(lvlpack_list)
+    menu_items["tut"] = "Tutorial"
+    menu_items["quit"] = "Exit game"
     select = 0
     running = True
     is_tut = False
@@ -175,23 +176,29 @@ def main(stdscr):
         ThirdVariable = True
         sbelect = 0
         while ThirdVariable:
+            menu_limit = 15
+            #scroll_factor = 8
             stdscr.clear()
-            entriesBritten = 0
-            for index, pack in zip(range(len(packdata['lvls'])+1), ["Back to menu..."] + list(packdata['lvls'].keys())):
-                if len(packdata['lvls'])+1 > 7:
-                    if index < (sbelect-3):
-                        if (sbelect+3) < len(packdata['lvls'])+1:
-                            continue
-                        elif index < (len(packdata['lvls'])-6):
-                            continue
-                    if entriesBritten >= 7:
-                        break
-                entriesBritten += 1
-                stdscr.addstr(entriesBritten+3, 2, "> " if index == sbelect else "- ", curses.color_pair(2))
-                stdscr.addstr(entriesBritten+3, 4, pack, curses.color_pair(3 if index == sbelect else 1))
+            #entriesBritten = 0
+            real_Benu_items = ["Back to menu..."] + list(packdata['lvls'].keys())
+            for index in range(menu_limit):
+                stdscr.addstr(index+4, 2, "> " if index == (menu_limit-1)/2 else "- ", curses.color_pair(2))
+                stdscr.addstr(index+4, 4, real_Benu_items[(round(sbelect-((menu_limit-1)/2))+index) % len(real_Benu_items)], curses.color_pair(3 if index == (menu_limit-1)/2 else 1))
+            #for index, pack in zip(range(len(packdata['lvls'])+1), ["Back to menu..."] + list(packdata['lvls'].keys())):
+            #    if len(packdata['lvls'])+1 > menu_limit:
+            #        if index < (sbelect-scroll_factor):
+            #            if (sbelect+scroll_factor) < len(packdata['lvls'])+1:
+            #                continue
+            #            elif index < (len(packdata['lvls'])-menu_limit+1):
+            #                continue
+            #        if entriesBritten >= menu_limit:
+            #            break
+            #    entriesBritten += 1
+            #    stdscr.addstr(entriesBritten+3, 2, "> " if index == sbelect else "- ", curses.color_pair(2))
+            #    stdscr.addstr(entriesBritten+3, 4, pack, curses.color_pair(3 if index == sbelect else 1))
             stdscr.addstr(1, 4, packdata['title'], curses.A_REVERSE)
             stdscr.addstr(2, 4, packdata['desc'], curses.A_REVERSE)
-            stdscr.addstr(12, 4, "Up/Down to move the cursor, Enter to select", curses.A_REVERSE)
+            stdscr.addstr(menu_limit+5, 4, "Up/Down to move the cursor, Enter to select", curses.A_REVERSE)
             stdscr.refresh()
             inp = stdscr.getkey()
             if inp == "KEY_DOWN":
@@ -208,40 +215,47 @@ def main(stdscr):
 
 
     while running:
+        menu_limit = 15
+        #scroll_factor = 8
         is_tut = False
         stdscr.clear()
-        entriesWritten = 0
-        for index, pack in zip(range(len(lvlpack_list)), lvlpack_list):
-            if len(lvlpack_list) > 7:
-                if index < (select-3):
-                    if (sbelect+3) < len(lvlpack_list):
-                        continue
-                    elif index < (len(lvlpack_list)-7):
-                        continue
-                if entriesWritten > 7:
-                    break
-            entriesWritten += 1
-            stdscr.addstr(entriesWritten+3, 2, "> " if index == select else "- ", curses.color_pair(2))
-            stdscr.addstr(entriesWritten+3, 4, lvlpack_list[pack]['title'], curses.color_pair(3 if index == select else 1))
-        stdscr.addstr(1, 4, "SokoPy v1.0", curses.A_REVERSE)
+        #entriesWritten = 0
+        real_menu_items = list(menu_items.values())
+        for index in range(menu_limit):
+            stdscr.addstr(index+4, 2, "> " if index == (menu_limit-1)/2 else "- ", curses.color_pair(2))
+            stdscr.addstr(index+4, 4, real_menu_items[(round(select-((menu_limit-1)/2))+index) % (len(real_menu_items))], curses.color_pair(3 if index == (menu_limit-1)/2 else 1))
+
+        #for index, pack in zip(range(len(menu_items)), menu_items):
+        #    if len(menu_items) > menu_limit:
+        #        if index < (select-scroll_factor):
+        #            if (select+scroll_factor) < len(menu_items):
+        #                continue
+        #            elif index < (len(menu_items)-menu_limit):
+        #                continue
+        #        if entriesWritten > menu_limit-1:
+        #            break
+        #    entriesWritten += 1
+        #    stdscr.addstr(entriesWritten+3, 2, "> " if index == select else "- ", curses.color_pair(2))
+        #    stdscr.addstr(entriesWritten+3, 4, menu_items[pack], curses.color_pair(3 if index == select else 1))
+        stdscr.addstr(1, 4, "SokoPy v1.2", curses.A_REVERSE)
         stdscr.addstr(2, 4, "A Sokoban clone made in Python", curses.A_REVERSE)
-        stdscr.addstr(12, 4, "Up/Down to move the cursor, Enter to select", curses.A_REVERSE)
+        stdscr.addstr(menu_limit+5, 4, "Up/Down to move the cursor, Enter to select", curses.A_REVERSE)
         stdscr.refresh()
 
         inp = stdscr.getkey()
         if inp == "KEY_DOWN":
-            select = (0 if select >= len(lvlpack_list)-1 else select+1)
+            select = (0 if select >= len(menu_items)-1 else select+1)
         elif inp == "KEY_UP":
-            select = (len(lvlpack_list)-1 if select <= 0 else select-1)
+            select = (len(menu_items)-1 if select <= 0 else select-1)
         elif inp == "\n":
-            if select == len(lvlpack_list)-1:
+            if select == len(menu_items)-1:
                 running = not running
-            elif select == len(lvlpack_list)-2:
+            elif select == len(menu_items)-2:
                 is_tut = True
                 load_lvl("tutorial.lvl")
                 select = 0
             else:
-                load_pack(list(lvlpack_list.keys())[select], )
+                load_pack(list(menu_items.keys())[select], )
 
 
 curses.wrapper(main)

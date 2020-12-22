@@ -55,4 +55,9 @@ def get_levelpacks():
             levelpack_list[os.path.basename(os.path.normpath(dirpath))] = meta['levelpack']
     return levelpack_list
 
-#print(get_levelpacks())
+def menu_packs(lvlpack_list):
+    titles = {}
+    for i in lvlpack_list:
+        titles[i] = lvlpack_list[i]["title"]
+    titles = {k: v for k, v in sorted(titles.items(), key=lambda item: item[1])}
+    return titles
