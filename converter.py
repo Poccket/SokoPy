@@ -9,6 +9,8 @@ Blocks = {
 	"+": "1000"
 }
 
+import sys
+
 def bitstring_to_bytes(s):
     v = int(s, 2)
     b = bytearray()
@@ -17,7 +19,11 @@ def bitstring_to_bytes(s):
         v >>= 8
     return bytes(b[::-1])
 
-with open("Sasquatch.txt", "r") as f:
+if len(sys.argv) < 2:
+    print("Please give a file to convert\nLike so: python3 converter.py example.txt")
+    sys.exit()
+
+with open(sys.argv[1], "r") as f:
 	data = f.readlines()
 
 started = False
@@ -45,4 +51,16 @@ for line in data:
 			lvl_binary = ""
 	elif line.rstrip():
 		lvl += [line.rstrip()]
+if lvl:
+    #print("no ; on end line")
+    for x in lvl:
+        for y in x:
+            lvl_binary += Blocks[y]
+        lvl_binary += "0000"
+    if len(lvl_binary) % 8:
+        lvl_binary += "0000"
+    to_write = bitstring_to_bytes(lvl_binary)
+    with open(str(lvl_num).zfill(2) + ".lvl", "w+b") as out:
+        out.write(to_write)
 
+print("Done!")
