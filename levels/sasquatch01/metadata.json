@@ -1,7 +1,7 @@
 {
 	"levelpack": {
-		"title": "Sokoban (1982 - NEC PC-8801)",
-		"desc": "The original levels from Hiroyuki Imabayashi's Sokoban",
+		"title": "Sasquatch (1999 - David W. Skinner)",
+		"desc": "David's exploration of a wide variety of puzzle types",
 		"lvls": {
 			"Level 1" : "01.lvl",
 			"Level 2" : "02.lvl",
@@ -51,8 +51,8 @@
 			"Level 46": "46.lvl",
 			"Level 47": "47.lvl",
 			"Level 48": "48.lvl",
-			"Level 49": "49.lvl",
-			"Level 50": "50.lvl"
+			"Level 49 - Parallel Logic": "49.lvl",
+			"Level 50 - Particle Theory": "50.lvl"
 		}
 	}
 }

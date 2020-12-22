@@ -1,7 +1,7 @@
 {
 	"levelpack": {
-		"title": "Sasquatch (1999 - David W. Skinner)",
-		"desc": "David's exploration of a wide variety of puzzle types",
+		"title": "8801 Sokoban (1982 - Thinking Rabbit)",
+		"desc": "The original levels from Hiroyuki Imabayashi's Sokoban",
 		"lvls": {
 			"Level 1" : "01.lvl",
 			"Level 2" : "02.lvl",
