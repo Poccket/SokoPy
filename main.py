@@ -1,10 +1,15 @@
 import curses
 import time
+import logging
+
+logging.basicConfig(filename='logs/sokopy'+str(int(time.time()))+'.log', level=logging.DEBUG)
 
 import level as lvl
+logging.info("Level module seemingly loaded OK!")
 
 
 def main(stdscr):
+    logging.info("Entered curses screen")
     curses.curs_set(0)
 
     curses.init_pair(1, curses.COLOR_RED    , curses.COLOR_BLACK )
@@ -19,6 +24,8 @@ def main(stdscr):
 
     inp = ""
     lvlpack_list = lvl.get_levelpacks()
+    if len(lvlpack_list) > 0:
+        logging.info("Level packs seemingly loaded OK!")
     menu_items = lvl.menu_packs(lvlpack_list)
     menu_items["tut"] = "Tutorial"
     menu_items["quit"] = "Exit game"
@@ -26,7 +33,18 @@ def main(stdscr):
     running = True
     is_tut = False
 
+    total_count = 0
+    pack_count = 0
+    logging.info("List of levelpacks and their level counts:")
+    for pack in lvlpack_list:
+        packcount = len(lvlpack_list[pack]["lvls"])
+        logging.info(" - " + lvlpack_list[pack]["title"] + " | " + str(packcount) + " levels")
+        total_count += packcount
+        pack_count += 1
+    logging.info("Total packs: " + str(pack_count) + " | Total Levels: " + str(total_count))
+
     def load_lvl(filedir: str):
+        logging.info("Level load requested: " + str(filedir))
         mapContent = lvl.decode_lvl("levels/" + filedir)
         playerLoc = [-1, -1]
         moves = 0
@@ -34,6 +52,7 @@ def main(stdscr):
         finished = False
         gameRunning = True
         clip = True
+        logging.info("Level seemingly loaded OK!")
         while gameRunning:
             stdscr.clear()
             height = 1
@@ -77,6 +96,7 @@ def main(stdscr):
                 if not finished:
                     finished = True
                     final_score = [moves, pushes]
+                    logging.info("Player completed the level! Moves: " + str(final_score[0]) + " | Pushes: " + str(final_score[1]))
 
                 stdscr.addstr((margin-2)+round(len(mapContent)/2), 4, "!!        GOOD JOB! YOU WON!       !!", curses.A_REVERSE)
                 stdscr.addstr((margin-1)+round(len(mapContent)/2), 4, (" TOTAL PUSHES: " + str(final_score[1]).ljust(4) + ("TOTAL MOVES: " + str(final_score[0])).rjust(17) + " "), curses.A_REVERSE)
@@ -158,6 +178,7 @@ def main(stdscr):
                 clip = True
             elif inp == "p":
                 if clip:
+                    logging.info("Somebody's cheating!")
                     clip = False
                     moves = 9000
                     pushes = 1337
@@ -168,34 +189,22 @@ def main(stdscr):
                     pushes = 0
                     clip = True
             elif inp == "\n":
+                logging.info("Returning to menu...")
                 gameRunning = not gameRunning
 
 
     def load_pack(lvlpack):
+        logging.info("Level pack load requested: " + str(lvlpack))
         packdata = lvlpack_list[lvlpack]
         ThirdVariable = True
         sbelect = 0
         while ThirdVariable:
             menu_limit = 15
-            #scroll_factor = 8
             stdscr.clear()
-            #entriesBritten = 0
             real_Benu_items = ["Back to menu..."] + list(packdata['lvls'].keys())
             for index in range(menu_limit):
                 stdscr.addstr(index+4, 2, "> " if index == (menu_limit-1)/2 else "- ", curses.color_pair(2))
                 stdscr.addstr(index+4, 4, real_Benu_items[(round(sbelect-((menu_limit-1)/2))+index) % len(real_Benu_items)], curses.color_pair(3 if index == (menu_limit-1)/2 else 1))
-            #for index, pack in zip(range(len(packdata['lvls'])+1), ["Back to menu..."] + list(packdata['lvls'].keys())):
-            #    if len(packdata['lvls'])+1 > menu_limit:
-            #        if index < (sbelect-scroll_factor):
-            #            if (sbelect+scroll_factor) < len(packdata['lvls'])+1:
-            #                continue
-            #            elif index < (len(packdata['lvls'])-menu_limit+1):
-            #                continue
-            #        if entriesBritten >= menu_limit:
-            #            break
-            #    entriesBritten += 1
-            #    stdscr.addstr(entriesBritten+3, 2, "> " if index == sbelect else "- ", curses.color_pair(2))
-            #    stdscr.addstr(entriesBritten+3, 4, pack, curses.color_pair(3 if index == sbelect else 1))
             stdscr.addstr(1, 4, packdata['title'], curses.A_REVERSE)
             stdscr.addstr(2, 4, packdata['desc'], curses.A_REVERSE)
             stdscr.addstr(menu_limit+5, 4, "Up/Down to move the cursor, Enter to select", curses.A_REVERSE)
@@ -213,31 +222,18 @@ def main(stdscr):
             elif inp == "r":
                 ThirdVariable = False
 
+    logging.info("Secondary definitions seemingly completed OK!")
+    logging.info("Giving user control... Stay back, this may go wrong.")
 
     while running:
         menu_limit = 15
-        #scroll_factor = 8
         is_tut = False
         stdscr.clear()
-        #entriesWritten = 0
         real_menu_items = list(menu_items.values())
         for index in range(menu_limit):
             stdscr.addstr(index+4, 2, "> " if index == (menu_limit-1)/2 else "- ", curses.color_pair(2))
             stdscr.addstr(index+4, 4, real_menu_items[(round(select-((menu_limit-1)/2))+index) % (len(real_menu_items))], curses.color_pair(3 if index == (menu_limit-1)/2 else 1))
-
-        #for index, pack in zip(range(len(menu_items)), menu_items):
-        #    if len(menu_items) > menu_limit:
-        #        if index < (select-scroll_factor):
-        #            if (select+scroll_factor) < len(menu_items):
-        #                continue
-        #            elif index < (len(menu_items)-menu_limit):
-        #                continue
-        #        if entriesWritten > menu_limit-1:
-        #            break
-        #    entriesWritten += 1
-        #    stdscr.addstr(entriesWritten+3, 2, "> " if index == select else "- ", curses.color_pair(2))
-        #    stdscr.addstr(entriesWritten+3, 4, menu_items[pack], curses.color_pair(3 if index == select else 1))
-        stdscr.addstr(1, 4, "SokoPy v1.2", curses.A_REVERSE)
+        stdscr.addstr(1, 4, "SokoPy v1.2  -  Levels: " + str(total_count), curses.A_REVERSE)
         stdscr.addstr(2, 4, "A Sokoban clone made in Python", curses.A_REVERSE)
         stdscr.addstr(menu_limit+5, 4, "Up/Down to move the cursor, Enter to select", curses.A_REVERSE)
         stdscr.refresh()
@@ -256,6 +252,11 @@ def main(stdscr):
                 select = 0
             else:
                 load_pack(list(menu_items.keys())[select], )
+        elif inp == "r":
+            running = not running
 
+logging.info("Primary definitions seemingly completed OK!")
 
 curses.wrapper(main)
+
+logging.info("Exiting out...")
