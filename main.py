@@ -3,6 +3,7 @@ import time
 import logging
 import argparse
 import sys
+import textwrap
 import level as lvl
 import lang
 
@@ -282,9 +283,12 @@ def main(stdscr):
                 else:
                     stdscr.addstr(indux+4, 2, "> " if indux == ((menu_limit-modd)/2)-4 else "- ", curses.color_pair(2))
                     stdscr.addstr(indux+4, 4, packitem, curses.color_pair(3 if indux == ((menu_limit-modd)/2)-4 else 1))
-            stdscr.addstr(1, 4, packdata['title'], curses.A_REVERSE)
-            stdscr.addstr(2, 4, packdata['desc'], curses.A_REVERSE)
-            stdscr.addstr(menu_limit+5, 4, lang.languages[args.lang][3], curses.A_REVERSE)
+            stdscr.addstr(1, 4, packdata['title'].center(50), curses.A_REVERSE)
+            lineind = 2
+            for line in textwrap.fill(packdata['desc'], 50).split("\n"):
+                stdscr.addstr(lineind, 4, line.center(50), curses.A_REVERSE)
+                lineind += 1
+            stdscr.addstr(menu_limit+5, 4, lang.languages[args.lang][3].center(50), curses.A_REVERSE)
             stdscr.refresh()
             imput = stdscr.getkey()
             if imput == "KEY_DOWN":
@@ -319,9 +323,9 @@ def main(stdscr):
             else:
                 stdscr.addstr(index+4, 2, "> " if index == ((menu_limit-modd)/2)-4 else "- ", curses.color_pair(2))
                 stdscr.addstr(index+4, 4, itemname, curses.color_pair(3 if index == ((menu_limit-modd)/2)-4 else 1))
-        stdscr.addstr(1, 4, lang.languages[args.lang][0] + "  -  " + lang.languages[args.lang][1] +": " + str(total_count), curses.A_REVERSE)
-        stdscr.addstr(2, 4, lang.languages[args.lang][2], curses.A_REVERSE)
-        stdscr.addstr(menu_limit+5, 4, lang.languages[args.lang][3], curses.A_REVERSE)
+        stdscr.addstr(1, 4, (lang.languages[args.lang][0] + "  -  " + lang.languages[args.lang][1] +": " + str(total_count)).center(50), curses.A_REVERSE)
+        stdscr.addstr(2, 4, lang.languages[args.lang][2].center(50), curses.A_REVERSE)
+        stdscr.addstr(menu_limit+5, 4, lang.languages[args.lang][3].center(50), curses.A_REVERSE)
         stdscr.refresh()
 
         inp = stdscr.getkey()
