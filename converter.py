@@ -17,18 +17,6 @@ import sys
 # into the binary level format I made.
 
 
-def bitstring_to_bytes(s: str) -> bytes:
-    """
-    Converts a string representation of bytes into actual bytes
-    """
-    v = int(s, 2)
-    b = bytearray()
-    while v:
-        b.append(v & 0xff)
-        v >>= 8
-    return bytes(b[::-1])
-
-
 Blocks = {
     "!": "0000",
     " ": "0010",
@@ -40,53 +28,65 @@ Blocks = {
     "+": "1000"
 }
 
-if len(sys.argv) < 2:
-    print("Please give a file to convert\n\
-           Like so: python3 converter.py example.txt")
-    sys.exit()
 
-with open(sys.argv[1], "r") as f:
-    data = f.readlines()
+def bitstring_to_bytes(s: str) -> bytes:
+    """
+    Converts a string representation of bytes into actual bytes
+    """
+    v = int(s, 2)
+    b = bytearray()
+    while v:
+        b.append(v & 0xff)
+        v >>= 8
+    return bytes(b[::-1])
 
-started = False
-lvl_num = 1
-lvl = []
-lvl_binary = ""
+def write_lvl(filename: str, outdata: bytes) -> None:
+    """
+    Writes level data (in binary) to a file
+    """
+    with open(filename + '.lvl', "w+b") as outfile:
+        outfile.write(outdata)
+    print("Wrote", len(outdata), "bytes to", filename + '.lvl')
 
-for line in data:
-    if line[0] == ";":
-        if started:
-            for x in lvl:
-                for y in x:
-                    lvl_binary += Blocks[y]
-                lvl_binary += "0000"
-            if len(lvl_binary) % 8:
-                lvl_binary += "0000"
-            to_write = bitstring_to_bytes(lvl_binary)
-            filename = str(lvl_num).zfill(2) + ".lvl"
-            with open(filename, "w+b") as out:
-                out.write(to_write)
-            print("Wrote", len(to_write), "bytes to", filename)
-            lvl_num += 1
-            lvl = []
-            lvl_binary = ""
-        else:
-            started = True
-            lvl = []
-            lvl_binary = ""
-    elif line.rstrip():
-        lvl += [line.rstrip()]
-if lvl:
-    for x in lvl:
+def textlist_to_lvl(lvldata: list) -> bytes:
+    """
+    Converts a list (each item being a line) into level data (in binary)
+    """
+    lvl_binary = ""
+    for x in lvldata:
         for y in x:
             lvl_binary += Blocks[y]
         lvl_binary += "0000"
     if len(lvl_binary) % 8:
         lvl_binary += "0000"
-    to_write = bitstring_to_bytes(lvl_binary)
-    filename = str(lvl_num).zfill(2) + ".lvl"
-    with open(filename, "w+b") as out:
-        out.write(to_write)
-    print("Wrote", len(to_write), "bytes to", filename)
+    return bitstring_to_bytes(lvl_binary)
 
-print("Done!")
+if __name__ == "__main__":
+    if len(sys.argv) < 2:
+        print("Please give a file to convert\n\
+               Like so: python3 converter.py example.txt")
+        sys.exit()
+    
+    with open(sys.argv[1], "r") as f:
+        data = f.readlines()
+
+    started = False
+    lvl_num = 1
+    lvl = []
+
+    for line in data:
+        if line[0] == ";":
+            if started:
+                to_write = textlist_to_lvl(lvl)
+                write_lvl(str(lvl_num).zfill(2), to_write)
+                lvl_num += 1
+                lvl = []
+            else:
+                started = True
+                lvl = []
+        elif line.rstrip():
+            lvl += [line.rstrip()]
+    if lvl:
+        to_write = textlist_to_lvl(lvl)
+        write_lvl(str(lvl_num).zfill(2), to_write)
+    print("Done!")
