@@ -4,13 +4,9 @@ import logging
 import argparse
 import sys
 import level as lvl
-import platform
-
-currOS = platform.system()
-nullLoc = ("NUL" if currOS == "Windows" else "/dev/null")
 
 parser = argparse.ArgumentParser(description="SokoPy - A Python-based Sokoban Clone")
-parser.add_argument('-d', '--debug', help="Creates a debug log under the /logs/ folder",
+parser.add_argument('-v', '--verbose', help="Uses more verbose language in the log for debugging",
                     action='store_true')
 parser.add_argument('-m', '--menusize', help="The amount of items to be displayed at once on a menu",
                     type=int, default=15)
@@ -18,8 +14,8 @@ parser.add_argument('-l', '--level', help="Loads directly into the specified lev
                     type=str, default="")
 args = parser.parse_args()
 
-logging.basicConfig(filename=('logs/sokopy'+str(int(time.time()))+'.log' if args.debug else nullLoc),
-                    level=logging.DEBUG)
+logging.basicConfig(filename=('logs/sokopy'+str(int(time.time()))+'.log'),
+                    level=(logging.DEBUG if args.debug else logging.WARNING))
 logging.info("Level module seemingly loaded OK!")
 
 
