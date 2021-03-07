@@ -4,13 +4,15 @@ import logging
 import argparse
 import sys
 import level as lvl
+import lang
 
 parser = argparse.ArgumentParser(description="SokoPy - A Python-based Sokoban Clone")
+parser.add_argument('-l', '--lang', help="Picks language (from lang.py)", type=str, default="EN-US")
 parser.add_argument('-v', '--verbose', help="Uses more verbose language in the log for debugging",
                     action='store_true')
 parser.add_argument('-m', '--menusize', help="The amount of items to be displayed at once on a menu",
                     type=int, default=15)
-parser.add_argument('-l', '--level', help="Loads directly into the specified level",
+parser.add_argument('-L', '--level', help="Loads directly into the specified level",
                     type=str, default="")
 args = parser.parse_args()
 
@@ -37,8 +39,8 @@ def main(stdscr):
     if len(lvlpack_list) > 0:
         logging.info("Level packs seemingly loaded OK!")
     menu_items = lvl.menu_packs(lvlpack_list)
-    menu_items["tut"] = "Tutorial"
-    menu_items["quit"] = "Exit game"
+    menu_items["tut"] = lang.languages[args.lang][4]
+    menu_items["quit"] = lang.languages[args.lang][5]
     select = 0
     running = True
     is_tut = False
@@ -75,13 +77,13 @@ def main(stdscr):
         while game_running:
             stdscr.clear()
             goal_visible = False
-            stdscr.addstr(1, 4, "Arrow keys to move, R to restart, Enter to exit", curses.A_REVERSE)
+            stdscr.addstr(1, 4, lang.languages[args.lang][7].center(50), curses.A_REVERSE)
             if is_tut:
-                stdscr.addstr(2, 4, "Get the boxes    to the goal    to win!", curses.A_REVERSE)
-                stdscr.addstr(2, 18, lvl.visTable[5], curses.color_pair(5))
-                stdscr.addstr(2, 33, lvl.visTable[6], curses.color_pair(2))
+                stdscr.addstr(2, 4, "Get the boxes to the goal to win!".center(50), curses.A_REVERSE)
+                #stdscr.addstr(2, 18, lvl.visTable[5], curses.color_pair(5))
+                #stdscr.addstr(2, 33, lvl.visTable[6], curses.color_pair(2))
             stdscr.addstr((4 if is_tut else 2), 4,
-                          ("Pushes: " + str(game_stats["pushes"]).ljust(6) + " | Moves: " + str(game_stats["moves"]).ljust(6)), curses.A_REVERSE)
+                          (lang.languages[args.lang][8] + ": " + str(game_stats["pushes"]).ljust(4) + " | " + lang.languages[args.lang][9] + ": " + str(game_stats["moves"]).ljust(4)).center(50), curses.A_REVERSE)
             bl_width = lvl.visWidth
             bl_height = lvl.visHeight
             margin = 6 if is_tut else 4
@@ -116,16 +118,16 @@ def main(stdscr):
                     logging.info("Player completed the level! Moves: " + str(final_stats["moves"]) +
                                  " | Pushes: " + str(final_stats["pushes"]))
                 stdscr.addstr((margin-3)+round(len(map_content)/2), 4,
-                              "!!         GOOD JOB! YOU WON!        !!", curses.A_REVERSE)
+                              "!!" + lang.languages[args.lang][10].center(46) + "!!", curses.A_REVERSE)
                 stdscr.addstr((margin+2)+round(len(map_content)/2), 4,
-                              "     PRESS ENTER TO RETURN TO MENU     ", curses.A_REVERSE)
+                              lang.languages[args.lang][15].center(50), curses.A_REVERSE)
                 
                 stdscr.addstr((margin-1)+round(len(map_content)/2), 4,
-                              (" TOTAL PUSHES: " + str(final_stats["pushes"]).ljust(4) +
-                              ("TOTAL MOVES:   " + str(final_stats["moves"]).ljust(4) + " ")), curses.A_REVERSE)
+                              (" " + lang.languages[args.lang][11] + ": " + str(final_stats["pushes"]).ljust(6) +
+                              (" " + lang.languages[args.lang][12] + ": " + str(final_stats["moves"]).ljust(6))).center(50), curses.A_REVERSE)
                 stdscr.addstr((margin)+round(len(map_content)/2), 4,
-                              (" BOX LINES:    " + str(final_stats["b_lines"]).ljust(4) +
-                              ("PLAYER LINES:  " + str(final_stats["p_lines"]).ljust(4)) + " "), curses.A_REVERSE)
+                              (" " + lang.languages[args.lang][13] + ": " + str(final_stats["b_lines"]).ljust(6) +
+                              (" " + lang.languages[args.lang][14] + ": " + str(final_stats["p_lines"]).ljust(6))).center(50), curses.A_REVERSE)
             inpup = stdscr.getkey()
             if inpup == "KEY_DOWN":
                 if (not clip) or (lvl.atrTable[map_content[player_loc[0]+1][player_loc[1]]][0] == "1"):
@@ -272,7 +274,7 @@ def main(stdscr):
         sbelect = 0
         while third_variable:
             stdscr.clear()
-            pack_content = list(packdata['lvls'].keys()) + ["Back to menu...", ""]
+            pack_content = list(packdata['lvls'].keys()) + [lang.languages[args.lang][6], ""]
             for indux in range(menu_limit):
                 packitem = pack_content[(round(sbelect - ((menu_limit - modd) / 2)) + indux + 4) % len(pack_content)]
                 if packitem == "":
@@ -282,7 +284,7 @@ def main(stdscr):
                     stdscr.addstr(indux+4, 4, packitem, curses.color_pair(3 if indux == ((menu_limit-modd)/2)-4 else 1))
             stdscr.addstr(1, 4, packdata['title'], curses.A_REVERSE)
             stdscr.addstr(2, 4, packdata['desc'], curses.A_REVERSE)
-            stdscr.addstr(menu_limit+5, 4, "Up/Down to move the cursor, Enter to select", curses.A_REVERSE)
+            stdscr.addstr(menu_limit+5, 4, lang.languages[args.lang][3], curses.A_REVERSE)
             stdscr.refresh()
             imput = stdscr.getkey()
             if imput == "KEY_DOWN":
@@ -317,9 +319,9 @@ def main(stdscr):
             else:
                 stdscr.addstr(index+4, 2, "> " if index == ((menu_limit-modd)/2)-4 else "- ", curses.color_pair(2))
                 stdscr.addstr(index+4, 4, itemname, curses.color_pair(3 if index == ((menu_limit-modd)/2)-4 else 1))
-        stdscr.addstr(1, 4, "SokoPy v1.2  -  Levels: " + str(total_count), curses.A_REVERSE)
-        stdscr.addstr(2, 4, "A Sokoban clone made in Python", curses.A_REVERSE)
-        stdscr.addstr(menu_limit+5, 4, "Up/Down to move the cursor, Enter to select", curses.A_REVERSE)
+        stdscr.addstr(1, 4, lang.languages[args.lang][0] + "  -  " + lang.languages[args.lang][1] +": " + str(total_count), curses.A_REVERSE)
+        stdscr.addstr(2, 4, lang.languages[args.lang][2], curses.A_REVERSE)
+        stdscr.addstr(menu_limit+5, 4, lang.languages[args.lang][3], curses.A_REVERSE)
         stdscr.refresh()
 
         inp = stdscr.getkey()
