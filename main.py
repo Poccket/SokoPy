@@ -63,9 +63,15 @@ def main(stdscr):
         logging.info("Level load requested: " + str(filedir))
         map_content = lvl.decode_lvl("levels/" + filedir)
         player_loc = [-1, -1]
-        moves = 0
-        pushes = 0
-        final_score = [0, 0]
+        player_last_dir = -1
+        player_was_push = False
+        game_stats = {
+            "moves": 0,
+            "pushes": 0,
+            "b_lines": 0,
+            "p_lines": 0
+        }
+        final_stats = None
         finished = False
         game_running = True
         clip = True
@@ -79,7 +85,7 @@ def main(stdscr):
                 stdscr.addstr(2, 18, lvl.visTable[5], curses.color_pair(5))
                 stdscr.addstr(2, 33, lvl.visTable[6], curses.color_pair(2))
             stdscr.addstr((4 if is_tut else 2), 4,
-                          ("Moves: " + str(moves).ljust(6) + " | Pushes: " + str(pushes).ljust(6)), curses.A_REVERSE)
+                          ("Pushes: " + str(game_stats["pushes"]).ljust(6) + " | Moves: " + str(game_stats["moves"]).ljust(6)), curses.A_REVERSE)
             bl_width = lvl.visWidth
             bl_height = lvl.visHeight
             margin = 6 if is_tut else 4
@@ -110,26 +116,42 @@ def main(stdscr):
             if not goal_visible:
                 if not finished:
                     finished = True
-                    final_score = [moves, pushes]
-                    logging.info("Player completed the level! Moves: " + str(final_score[0]) +
-                                 " | Pushes: " + str(final_score[1]))
-                stdscr.addstr((margin-2)+round(len(map_content)/2), 4,
-                              "!!        GOOD JOB! YOU WON!       !!", curses.A_REVERSE)
+                    final_stats = game_stats.copy()
+                    logging.info("Player completed the level! Moves: " + str(final_stats["moves"]) +
+                                 " | Pushes: " + str(final_stats["pushes"]))
+                stdscr.addstr((margin-3)+round(len(map_content)/2), 4,
+                              "!!         GOOD JOB! YOU WON!        !!", curses.A_REVERSE)
+                stdscr.addstr((margin+2)+round(len(map_content)/2), 4,
+                              "     PRESS ENTER TO RETURN TO MENU     ", curses.A_REVERSE)
+                
                 stdscr.addstr((margin-1)+round(len(map_content)/2), 4,
-                              (" TOTAL PUSHES: " + str(final_score[1]).ljust(4) +
-                              ("TOTAL MOVES: " + str(final_score[0])).rjust(17) + " "), curses.A_REVERSE)
-                stdscr.addstr((margin+1)+round(len(map_content)/2), 4,
-                              "    PRESS ENTER TO RETURN TO MENU    ", curses.A_REVERSE)
+                              (" TOTAL PUSHES: " + str(final_stats["pushes"]).ljust(4) +
+                              ("TOTAL MOVES:   " + str(final_stats["moves"]).ljust(4) + " ")), curses.A_REVERSE)
+                stdscr.addstr((margin)+round(len(map_content)/2), 4,
+                              (" BOX LINES:    " + str(final_stats["b_lines"]).ljust(4) +
+                              ("PLAYER LINES:  " + str(final_stats["p_lines"]).ljust(4)) + " "), curses.A_REVERSE)
             inpup = stdscr.getkey()
             if inpup == "KEY_DOWN":
                 if (not clip) or (lvl.atrTable[map_content[player_loc[0]+1][player_loc[1]]][0] == "1"):
                     player_loc[0] += 1
-                    moves += 1
+                    game_stats["moves"] += 1
+                    if player_last_dir != 2:
+                        game_stats["p_lines"] += 1
+                    player_last_dir = 2
+                    player_was_push = False
                 elif lvl.atrTable[map_content[player_loc[0]+1][player_loc[1]]][1] == "1":
                     if lvl.atrTable[map_content[player_loc[0]+2][player_loc[1]]][0] == "1":
                         player_loc[0] += 1
-                        moves += 1
-                        pushes += 1
+                        game_stats["moves"] += 1
+                        if player_last_dir != 2:
+                            game_stats["p_lines"] += 1
+                            if player_was_push:
+                                game_stats["b_lines"] += 1
+                        player_last_dir = 2
+                        game_stats["pushes"] += 1
+                        if not player_was_push:
+                            player_was_push = True
+                            game_stats["b_lines"] += 1
                         if map_content[player_loc[0]+1][player_loc[1]] == 6:
                             map_content[player_loc[0]+1][player_loc[1]] = 7
                         else:
@@ -141,12 +163,24 @@ def main(stdscr):
             elif inpup == "KEY_UP":
                 if (not clip) or (lvl.atrTable[map_content[player_loc[0]-1][player_loc[1]]][0] == "1"):
                     player_loc[0] -= 1
-                    moves += 1
+                    game_stats["moves"] += 1
+                    if player_last_dir != 0:
+                        game_stats["p_lines"] += 1
+                    player_last_dir = 0
+                    player_was_push = False
                 elif lvl.atrTable[map_content[player_loc[0]-1][player_loc[1]]][1] == "1":
                     if lvl.atrTable[map_content[player_loc[0]-2][player_loc[1]]][0] == "1":
                         player_loc[0] -= 1
-                        moves += 1
-                        pushes += 1
+                        game_stats["moves"] += 1
+                        if player_last_dir != 0:
+                            game_stats["p_lines"] += 1
+                            if player_was_push:
+                                game_stats["b_lines"] += 1
+                        player_last_dir = 0
+                        game_stats["pushes"] += 1
+                        if not player_was_push:
+                            player_was_push = True
+                            game_stats["b_lines"] += 1
                         if map_content[player_loc[0]-1][player_loc[1]] == 6:
                             map_content[player_loc[0]-1][player_loc[1]] = 7
                         else:
@@ -158,12 +192,24 @@ def main(stdscr):
             elif inpup == "KEY_RIGHT":
                 if (not clip) or (lvl.atrTable[map_content[player_loc[0]][player_loc[1]+1]][0] == "1"):
                     player_loc[1] += 1
-                    moves += 1
+                    game_stats["moves"] += 1
+                    if player_last_dir != 1:
+                        game_stats["p_lines"] += 1
+                    player_last_dir = 1
+                    player_was_push = False
                 elif lvl.atrTable[map_content[player_loc[0]][player_loc[1]+1]][1] == "1":
                     if lvl.atrTable[map_content[player_loc[0]][player_loc[1]+2]][0] == "1":
                         player_loc[1] += 1
-                        moves += 1
-                        pushes += 1
+                        game_stats["moves"] += 1
+                        if player_last_dir != 1:
+                            game_stats["p_lines"] += 1
+                            if player_was_push:
+                                game_stats["b_lines"] += 1
+                        player_last_dir = 1
+                        game_stats["pushes"] += 1
+                        if not player_was_push:
+                            player_was_push = True
+                            game_stats["b_lines"] += 1
                         if map_content[player_loc[0]][player_loc[1]+1] == 6:
                             map_content[player_loc[0]][player_loc[1]+1] = 7
                         else:
@@ -175,12 +221,24 @@ def main(stdscr):
             elif inpup == "KEY_LEFT":
                 if (not clip) or (lvl.atrTable[map_content[player_loc[0]][player_loc[1]-1]][0] == "1"):
                     player_loc[1] -= 1
-                    moves += 1
+                    game_stats["moves"] += 1
+                    if player_last_dir != 3:
+                        game_stats["p_lines"] += 1
+                    player_last_dir = 3
+                    player_was_push = False
                 elif lvl.atrTable[map_content[player_loc[0]][player_loc[1]-1]][1] == "1":
                     if lvl.atrTable[map_content[player_loc[0]][player_loc[1]-2]][0] == "1":
                         player_loc[1] -= 1
-                        moves += 1
-                        pushes += 1
+                        game_stats["moves"] += 1
+                        if player_last_dir != 3:
+                            game_stats["p_lines"] += 1
+                            if player_was_push:
+                                game_stats["b_lines"] += 1
+                        player_last_dir = 3
+                        game_stats["pushes"] += 1
+                        if not player_was_push:
+                            player_was_push = True
+                            game_stats["b_lines"] += 1
                         if map_content[player_loc[0]][player_loc[1]-1] == 6:
                             map_content[player_loc[0]][player_loc[1]-1] = 7
                         else:
@@ -192,20 +250,20 @@ def main(stdscr):
             elif inpup == "r":
                 map_content = lvl.decode_lvl("levels/" + filedir)
                 player_loc = [-1, -1]
-                moves = 0
-                pushes = 0
+                game_stats["moves"] = 0
+                game_stats["pushes"] = 0
                 clip = True
             elif inpup == "p":
                 if clip:
                     logging.info("Somebody's cheating!")
                     clip = False
-                    moves = 9000
-                    pushes = 1337
+                    game_stats["moves"] = 9000
+                    game_stats["pushes"] = 1337
                 else:
                     map_content = lvl.decode_lvl("levels/" + filedir)
                     player_loc = [-1, -1]
-                    moves = 0
-                    pushes = 0
+                    game_stats["moves"] = 0
+                    game_stats["pushes"] = 0
                     clip = True
             elif inpup == "\n":
                 logging.info("Returning to menu...")
