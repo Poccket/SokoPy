@@ -4,7 +4,10 @@ import logging
 import argparse
 import sys
 import level as lvl
+import platform
 
+currOS = platform.system()
+nullLoc = ("NUL" if currOS == "Windows" else "/dev/null")
 
 parser = argparse.ArgumentParser(description="SokoPy - A Python-based Sokoban Clone")
 parser.add_argument('-d', '--debug', help="Creates a debug log under the /logs/ folder",
@@ -15,7 +18,7 @@ parser.add_argument('-l', '--level', help="Loads directly into the specified lev
                     type=str, default="")
 args = parser.parse_args()
 
-logging.basicConfig(filename=('logs/sokopy'+str(int(time.time()))+'.log' if args.debug else '/dev/null'),
+logging.basicConfig(filename=('logs/sokopy'+str(int(time.time()))+'.log' if args.debug else nullLoc),
                     level=logging.DEBUG)
 logging.info("Level module seemingly loaded OK!")
 
