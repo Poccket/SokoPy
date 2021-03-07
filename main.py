@@ -15,7 +15,7 @@ parser.add_argument('-l', '--level', help="Loads directly into the specified lev
 args = parser.parse_args()
 
 logging.basicConfig(filename=('logs/sokopy'+str(int(time.time()))+'.log'),
-                    level=(logging.DEBUG if args.debug else logging.WARNING))
+                    level=(logging.DEBUG if args.verbose else logging.WARNING))
 logging.info("Level module seemingly loaded OK!")
 
 
