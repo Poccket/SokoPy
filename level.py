@@ -47,7 +47,7 @@ def decode_lvl(filename: str):  # , offset: int = 4): <-- What did this do?
 
 def get_levelpacks():
     levelpack_list = {}
-    for dirpath, dirnames, files in os.walk(os.path.abspath(os.curdir + "/levels/")):
+    for dirpath, dirnames, files in os.walk(os.path.abspath(os.curdir + "/data/levels/")):
         if "metadata.json" in files:
             with open(dirpath + "/metadata.json", mode='r') as f:
                 f_content = f.read()

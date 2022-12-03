@@ -1,6 +1,6 @@
 languages = {
 	"EN-US": [
-		"SokoPy v1.3",
+		"SokoPy",
 		"Levels",
 		"A Sokoban clone made in Python",
 		"Up/Down to move the cursor, Enter to select",
@@ -15,6 +15,7 @@ languages = {
 		"TOTAL MOVES",
 		"BOX LINES",
 		"PLAYER LINES",
-		"PRESS ENTER TO RETURN TO MENU"
+		"PRESS ENTER TO RETURN TO MENU",
+		"version 2.0.0"
 	]
 }
