@@ -1,8 +1,5 @@
 # Default imports
 import argparse
-import json
-import os
-import sys
 import time
 # Limited default imports
 from contextlib import redirect_stdout
@@ -18,11 +15,8 @@ from pygame.locals import (
 )
 # Local imports
 import lang
+import save
 import level as lvl
-
-
-if getattr(sys, 'frozen', False):
-    os.chdir(sys._MEIPASS)
 
 
 parser = argparse.ArgumentParser(description="SokoPy - A Python-based Sokoban Clone")
@@ -32,25 +26,9 @@ parser.add_argument('-L', '--level', help="Loads directly into the specified lev
 args = parser.parse_args()
 
 if args.lang not in lang.languages:
-    print("Language not valid!")
-    quit()
+    raise ValueError(f"Language selected ({args.lang}) is not present")
 
-
-def commit_save(savedata):
-    with open('save.json', 'w', encoding='utf-8') as f:
-        json.dump(savedata, f, ensure_ascii=False, indent=4)
-
-
-def get_save():
-    with open('save.json') as json_file:
-        return json.load(json_file)
-
-
-if os.path.exists('save.json'):
-    saveData = get_save()
-else:
-    saveData = {"Completed": []}
-    commit_save(saveData)
+save.init_save()
 
 
 def load_file(file_name):
@@ -266,8 +244,7 @@ while active:
                             elif menuIndex == len(menu_items)-3:
                                 if erasing == 1:
                                     erasing = 2
-                                    saveData = {"Completed": []}
-                                    commit_save(saveData)
+                                    save.erase_save()
                                     screenShake = 60
                                 else:
                                     screenShake = 30
@@ -652,9 +629,7 @@ while active:
         if winState:
             if menuLevel != "root":
                 levelTitle = menuLevel + '/' + list(lvlpack_list[menuLevel]['lvls'].values())[lvlIndex]
-                if levelTitle not in saveData['Completed']:
-                    saveData['Completed'] += [levelTitle]
-                    commit_save(saveData)
+                save.add_savedata(levelTitle)
             draw_text("BigArial", "You Won!", (192, 192, 255),
                       (640-textSlide[0], 400-textSlide[1]), center=True, shadow=True)
             draw_text("Arial", "Press R to restart or", (192, 192, 255),
@@ -748,7 +723,7 @@ while active:
                 if i == lvlIndex:
                     screen.blit(resources["sprite"]["selbutton"],
                                 (15+(160*(i % 8))-slideOffset[1], 250-((lvlIndex//8)*160)-slideOffset[0]+(160*(i//8))))
-                    if menuLevel + '/' + list(lvlpack_list[menuLevel]['lvls'].values())[i] in saveData['Completed']:
+                    if save.check_savedata(menuLevel + '/' + list(lvlpack_list[menuLevel]['lvls'].values())[i]):
                         screen.blit(resources["sprite"]["lvlchecked"],
                                     (80+(160*(i % 8))-slideOffset[1],
                                      300-((lvlIndex//8)*160)-slideOffset[0]+(160*(i//8))))
@@ -762,7 +737,7 @@ while active:
                 else:
                     screen.blit(resources["sprite"]["lvlbutton"],
                                 (15+(160*(i % 8))-slideOffset[1], 250-((lvlIndex//8)*160)-slideOffset[0]+(160*(i//8))))
-                    if menuLevel + '/' + list(lvlpack_list[menuLevel]['lvls'].values())[i] in saveData['Completed']:
+                    if save.check_savedata(menuLevel + '/' + list(lvlpack_list[menuLevel]['lvls'].values())[i]):
                         screen.blit(resources["sprite"]["lvlchecked"],
                                     (80+(160*(i % 8))-slideOffset[1],
                                      300-((lvlIndex//8)*160)-slideOffset[0]+(160*(i//8))))
@@ -785,6 +760,4 @@ while active:
         draw_text("Arial", "Focus Lost!", (255, 255, 255), (500, 20))
     screen.blit(resources["sprite"]["vignette"], (0, 0))
     pygame.display.flip()
-saveData['Completed'].sort()
-commit_save(saveData)
 pygame.quit()
