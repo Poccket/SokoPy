@@ -5,6 +5,7 @@ import argparse
 import lang
 import level as lvl
 import json
+import sys
 from random import randint, seed, choice
 from math import floor
 import time
