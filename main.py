@@ -1,29 +1,25 @@
-# Imports
-import pygame
-import os
+# Default imports
 import argparse
+import json
+import os
+import sys
+import time
+# Limited default imports
+from contextlib import redirect_stdout
+from copy import deepcopy
+from math import floor
+from random import randint, seed, choice
+# 3rd party imports
+with redirect_stdout(None):  # This stops pygame from printing the stupid import message
+    import pygame
+from pygame.locals import (
+    K_SPACE, K_ESCAPE, K_RETURN, KEYDOWN, MOUSEBUTTONDOWN,
+    K_BACKSLASH, K_UP, K_DOWN, K_LEFT, K_RIGHT, K_r, K_z
+)
+# Local imports
 import lang
 import level as lvl
-import json
-import sys
-from random import randint, seed, choice
-from math import floor
-import time
-from copy import deepcopy
-from pygame.locals import (
-    K_SPACE,
-    K_ESCAPE,
-    K_RETURN,
-    KEYDOWN,
-    MOUSEBUTTONDOWN,
-    K_BACKSLASH,
-    K_UP,
-    K_DOWN,
-    K_LEFT,
-    K_RIGHT,
-    K_r,
-    K_z
-)
+
 
 if getattr(sys, 'frozen', False):
     os.chdir(sys._MEIPASS)
@@ -31,13 +27,13 @@ if getattr(sys, 'frozen', False):
 
 parser = argparse.ArgumentParser(description="SokoPy - A Python-based Sokoban Clone")
 parser.add_argument('-l', '--lang', help="Picks language (from lang.py)", type=str, default="EN-US")
-parser.add_argument('-v', '--verbose', help="Uses more verbose language in the log for debugging",
-                    action='store_true')
-parser.add_argument('-m', '--menusize', help="The amount of items to be displayed at once on a menu",
-                    type=int, default=15)
-parser.add_argument('-L', '--level', help="Loads directly into the specified level",
+parser.add_argument('-L', '--level', help="Loads directly into the specified level (This doesn't work yet!)",
                     type=str, default="")
 args = parser.parse_args()
+
+if args.lang not in lang.languages:
+    print("Language not valid!")
+    quit()
 
 
 def commit_save(savedata):
