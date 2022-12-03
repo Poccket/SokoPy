@@ -1,5 +1,8 @@
 import os
 import json
+from math import floor
+from random import randint, seed
+from copy import deepcopy
 
 # blocks:
 # new line      , empty space  , walkable  , player
@@ -24,7 +27,7 @@ atrTable = ["00", "00", "10", "10",
             "00", "00", "00", "00", ]
 
 
-def decode_lvl(filename: str):  # , offset: int = 4): <-- What did this do?
+def decode_lvl(filename: str):  # , slides["display"]: int = 4): <-- What did this do?
     with open(filename, mode='rb') as f:
         f_content = f.read()
     map_data = [[]]
@@ -62,3 +65,203 @@ def menu_packs(lvlpack_list):
         titles[i] = lvlpack_list[i]["title"]
     titles = {k: v for k, v in sorted(titles.items(), key=lambda item: item[1])}
     return titles
+
+
+def pre_calc_connections(level: list[list]):
+    pre_calced = []
+    for x, row in enumerate(level):
+        pre_calced += [[]]
+        for y, col in enumerate(row):
+            if col == 4:
+                neighbors = 0
+                if x > 0 and y < len(level[x - 1]):
+                    neighbors += int(level[x - 1][y] == 4)
+                if y > 0:
+                    neighbors += int(level[x][y - 1] == 4) * 2
+                if y < len(level[x]) - 1:
+                    neighbors += int(level[x][y + 1] == 4) * 4
+                if x < len(level) and y < len(level[x + 1]):
+                    neighbors += int(level[x + 1][y] == 4) * 8
+                pre_calced[x] += [((64 * (neighbors % 4), 64 * floor(neighbors / 4)), (64, 64))]
+            else:
+                pre_calced[x] += [None]
+    return pre_calced
+
+
+def calc_place(modifier, large, modpos, resolution):
+    if large:
+        return ((resolution/2)-32) + ((modifier - modpos) * 64)
+    else:
+        return modpos + (modifier * 64)
+
+
+class Level:
+    def __init__(self, level: str, screen_dimensions: list[int]):
+        self.data = decode_lvl(level)
+        self.precalculated_connections = pre_calc_connections(self.data)
+        self.dimensions = {
+            "height": len(self.data) - 1,
+            "width": max([len(i) for i in self.data])
+        }
+        self.large = {
+            "tall": self.dimensions["height"] > (screen_dimensions[1]/64),
+            "wide": self.dimensions["width"] > (screen_dimensions[0]/64)
+        }
+        self.corner = {
+            "top": (screen_dimensions[1]/2) - ((self.dimensions["height"]/2)*64),
+            "left": (screen_dimensions[0]/2) - ((self.dimensions["width"]/2)*64)
+        }
+        for x, row in enumerate(self.data):
+            for y, col in enumerate(row):
+                if col == 3:
+                    self.player = [x, y]
+                    self.data[x][y] = 2
+                    break
+                elif col == 8:
+                    self.player = [x, y]
+                    self.data[x][y] = 6
+                    break
+        self.player += [2]
+        self.last_crate_moved = [-1, -1]
+        self.history = []
+        self.animation = {
+            "ticks": 0,
+            "frame": 0
+        }
+
+    def capture(self) -> None:
+        if len(self.history) > 100:
+            self.history.pop(0)
+        self.history += [{
+            "data": deepcopy(self.data),
+            "player": deepcopy(self.player),
+        }]
+
+    def rewind(self) -> None:
+        self.data = self.history[-1]["data"]
+        self.player = self.history[-1]["player"]
+        self.history.pop(-1)
+
+    def check_win(self) -> bool:
+        for x in self.data:
+            for y in x:
+                if y == 5:
+                    return False
+        return True
+
+    def move_player(self, direction: list[int], slides):
+        self.player[2] = (0 if direction[0] == -1 else 2) if direction[0] else (3 if direction[1] == -1 else 1)
+        if atrTable[self.data[self.player[0] + direction[0]][self.player[1] + direction[1]]][0] == "1":
+            self.capture()
+            self.player[0] += direction[0]
+            self.player[1] += direction[1]
+            if self.large["tall"]:
+                slides["display"][0] -= 64*direction[0]
+            else:
+                slides["character"][0] += 64*direction[0]
+            if self.large["wide"]:
+                slides["display"][1] -= 64*direction[1]
+            else:
+                slides["character"][1] += 64*direction[1]
+        elif atrTable[self.data[self.player[0] + direction[0]][self.player[1] + direction[1]]][1] == "1":
+            if atrTable[self.data[self.player[0] + (direction[0]*2)][self.player[1] + (direction[1]*2)]][0] == "1":
+                self.capture()
+                if self.data[self.player[0] + direction[0]][self.player[1] + direction[1]] == 5:
+                    self.data[self.player[0] + (direction[0]*2)][self.player[1] + (direction[1]*2)] = 5 if \
+                        self.data[self.player[0] + (direction[0]*2)][self.player[1] + (direction[1]*2)] == 2 else 7
+                    self.data[self.player[0] + direction[0]][self.player[1] + direction[1]] = 2
+                if self.data[self.player[0] + direction[0]][self.player[1] + direction[1]] == 7:
+                    self.data[self.player[0] + (direction[0]*2)][self.player[1] + (direction[1]*2)] = 5 if \
+                        self.data[self.player[0] + (direction[0]*2)][self.player[1] + (direction[1]*2)] == 2 else 7
+                    self.data[self.player[0] + direction[0]][self.player[1] + direction[1]] = 6
+                self.last_crate_moved = [self.player[0] + (direction[0]*2), self.player[1] + (direction[1]*2)]
+                slides["crate"][0] += 64*direction[0]
+                slides["crate"][1] += 64*direction[1]
+                self.player[0] += direction[0]
+                self.player[1] += direction[1]
+                if self.large["tall"]:
+                    slides["display"][0] -= 64*direction[0]
+                else:
+                    slides["character"][0] += 64*direction[0]
+                if self.large["wide"]:
+                    slides["display"][1] -= 64*direction[1]
+                else:
+                    slides["character"][1] += 64*direction[1]
+            else:
+                slides["shake"] = 3
+        else:
+            slides["shake"] = 3
+
+    def render(self, screen_dimensions: list[int], slides: dict, screen, resources, tiles, dt, mod=0, parallax=1, player=True):
+        modpos = [0, 0]
+        modpos[0] = self.player[0]+2.5 if self.large["tall"] else self.corner["top"]
+        modpos[1] = self.player[1]-2.5 if self.large["wide"] else self.corner["left"]
+        for x in range(self.player[0]-8, self.player[0]+9) if self.large["tall"] else range(-8, self.dimensions["height"]+8):
+            for y in range(self.player[1]-11, self.player[1]+11) if self.large["wide"] else range(-8, self.dimensions["width"]+8):
+                draw_floor = False
+                seed(sum(self.data[0]) + sum(self.data[-1]) + x + y)
+                if -1 <= x <= self.dimensions["height"]:
+                    if -1 <= y <= self.dimensions["width"]:
+                        draw_floor = True
+                    else:
+                        if y < 0:
+                            draw_floor = randint(0, abs(y)) < 1
+                        elif y > len(self.data[x]):
+                            draw_floor = randint(0, abs(y-len(self.data[x]))) < 1
+                else:
+                    if 0 <= y <= self.dimensions["width"]+1:
+                        if x < 0:
+                            draw_floor = randint(0, abs(x)) < 1
+                        elif x > self.dimensions["height"]+1:
+                            draw_floor = randint(0, abs(x-self.dimensions["height"])) < 1
+                if draw_floor:
+                    screen.blit(resources["sprite"]["gbrick"],
+                                (-64 + calc_place(y, self.large["tall"], modpos[1], screen_dimensions[1])
+                                 - (slides["display"][1] / parallax) - (50 / parallax),
+                                 -64 + calc_place(x, self.large["wide"], modpos[0], screen_dimensions[0])
+                                 - (slides["display"][0] / parallax) - ((50 / parallax) * mod)))
+        for x, row in enumerate(self.data):
+            if self.large["tall"] and (x < self.player[0]-8 or x > self.player[0]+8):
+                continue
+            for y, col in enumerate(row):
+                if self.large["wide"] and (y < self.player[1]-11 or y > self.player[1]+11):
+                    continue
+                if 4 <= col <= 7:
+                    if [x, y] == self.last_crate_moved:
+                        if col == 7:
+                            screen.blit(resources["sprite"]["target"],
+                                        (-64 + calc_place(y, self.large["tall"], modpos[1], screen_dimensions[1])
+                                         - (slides["display"][1] / parallax) - (50 / parallax),
+                                         -64 + calc_place(x, self.large["wide"], modpos[0], screen_dimensions[0])
+                                         - (slides["display"][0] / parallax) - ((50 / parallax) * mod)))
+                        screen.blit(resources["sprite"][tiles[col - 4]],
+                                    (-64 + calc_place(y, self.large["tall"], modpos[1], screen_dimensions[1])
+                                     - (slides["display"][1] / parallax) - (50 / parallax),
+                                     -64 + calc_place(x, self.large["wide"], modpos[0], screen_dimensions[0])
+                                     - (slides["display"][0] / parallax) - ((50 / parallax) * mod)))
+                    elif col == 4:
+                        screen.blit(resources["sprite"]["rbricksheet"],
+                                    (-64 + calc_place(y, self.large["tall"], modpos[1], screen_dimensions[1])
+                                     - (slides["display"][1] / parallax) - (50 / parallax),
+                                     -64 + calc_place(x, self.large["wide"], modpos[0], screen_dimensions[0])
+                                     - (slides["display"][0] / parallax) - ((50 / parallax) * mod)),
+                                    area=self.precalculated_connections[x][y])
+
+                    else:
+                        screen.blit(resources["sprite"][tiles[col - 4]],
+                                    (-64 + calc_place(y, self.large["tall"], modpos[1], screen_dimensions[1])
+                                     - (slides["display"][1] / parallax) - (50 / parallax),
+                                     -64 + calc_place(x, self.large["wide"], modpos[0], screen_dimensions[0])
+                                     - (slides["display"][0] / parallax) - ((50 / parallax) * mod)))
+        if self.animation["ticks"] > 100:
+            self.animation["ticks"] = 0
+            self.animation["frame"] = 0 if self.animation["frame"] == 2 else self.animation["frame"]+1
+        else:
+            self.animation["ticks"] += dt
+        if player:
+            walkingframe = 4 * self.animation["frame"] if int((sum(slides["display"]) + sum(slides["character"])) / 10) else 0
+            screen.blit(resources["sprite"]["player"][self.player[2] + walkingframe],
+                        ((608 - (slides["display"][1] / 100)) if self.large["wide"] else
+                         (self.corner["left"] - slides["character"][1] - slides["display"][1] + self.player[1] * 64),
+                         (446 - (slides["display"][0] / 100)) if self.large["tall"] else
+                         (self.corner["top"] - slides["display"][0] - slides["character"][0] + self.player[0] * 64)))
