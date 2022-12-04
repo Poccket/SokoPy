@@ -41,7 +41,7 @@ pygame.init()
 pygame.display.set_caption('SokoPy')
 # TODO: Make the game properly scalable
 _sm = 2
-screen = pygame.display.set_mode([640*_sm, 480*_sm])
+screen = pygame.display.set_mode([480*_sm, 480*_sm], pygame.RESIZABLE)
 clock = pygame.time.Clock()
 
 
@@ -82,6 +82,8 @@ resources = {
 
     },
 }
+
+resources["sprite"]["vignette"] = pygame.transform.scale(resources["sprite"]["vignette"], (640*_sm, 480*_sm))
 
 tiles = ["rbrick", "crate", "target", "cratedark"]
 
@@ -133,6 +135,7 @@ focused = True
 winState = False
 frame = 0
 frameup = 0
+resUpdated = False
 
 # 0: menu, 1: game
 mode = 0
@@ -202,6 +205,12 @@ while active:
                 active = False
             elif event.type == MOUSEBUTTONDOWN:
                 continue
+            if event.type == pygame.VIDEORESIZE:
+                resources["sprite"]["vignette"] = \
+                    pygame.image.load(load_file(f"data/sprites/vignette.png")).convert_alpha()
+                resources["sprite"]["vignette"] = \
+                    pygame.transform.scale(resources["sprite"]["vignette"], (event.w, event.h))
+                resUpdated = True
             elif event.type == KEYDOWN and newMode == -1:
                 if event.key == K_BACKSLASH:
                     debug = not debug
@@ -360,6 +369,9 @@ while active:
             winText = True
             lastMoved = [-1, -1]
         else:
+            if resUpdated:
+                map_content.update_res(res)
+                resUpdated = False
             if newMode != -1:
                 charSlideMod = 1
             else:
@@ -385,7 +397,7 @@ while active:
     elif mode == 0:
         if setupDone != 0:
             res = pygame.display.Info()
-            res = [res.current_w*2, res.current_h]
+            res = [res.current_w, res.current_h]
             setupDone = 0
             newMenuLevel = None
             walking = False
@@ -395,9 +407,11 @@ while active:
             parallaxMulti = 2
             slideDiv = 7
         if menuLevel == "root":
+            if resUpdated:
+                map_content = lvl.Level(f"data/levels/{menuBackLevelPack}/{menuBackLevel}", res)
             lvlIndex = 0
             menuMax = len(menu_items)-1
-            map_content.render(res, slides, screen, resources, tiles, dt, mod=menuIndex, parallax=3, player=False)
+            map_content.render(res, slides, screen, resources, tiles, dt, mod=menuIndex, parallax=3, player=False, modsize=50)
             screen.blit(resources["sprite"]["shade"], (0, 0))
             for i, item in enumerate(menu_items.values()):
                 draw_text("Arial", item,
@@ -444,6 +458,11 @@ while active:
                       (40-slides["display"][1], 150+((160*(-(lvlIndex//8)))-slides["display"][0])), shadow=True)
     if debug:
         debug_show()
+        #lineRes = pygame.display.Info()
+        #for i in range(1, int(lineRes.current_h/64)):
+        #    pygame.draw.line(screen, (255, 255, 255), (0, 64*i), (lineRes.current_w, 64*i))
+        #for i in range(1, int(lineRes.current_w/64)):
+        #    pygame.draw.line(screen, (255, 255, 255), (64*i, 0), (64*i, lineRes.current_h))
     screen.blit(resources["sprite"]["vignette"], (0, 0))
     pygame.display.flip()
 pygame.quit()

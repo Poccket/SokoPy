@@ -111,6 +111,10 @@ class Level:
             "top": (screen_dimensions[1]/2) - ((self.dimensions["height"]/2)*64),
             "left": (screen_dimensions[0]/2) - ((self.dimensions["width"]/2)*64)
         }
+        self.distances = {
+            "height": int(screen_dimensions[1]/128) + 1,
+            "width": int(screen_dimensions[0]/128) + 1,
+        }
         for x, row in enumerate(self.data):
             for y, col in enumerate(row):
                 if col == 3:
@@ -127,6 +131,20 @@ class Level:
         self.animation = {
             "ticks": 0,
             "frame": 0
+        }
+
+    def update_res(self, screen_dimensions) -> None:
+        self.large = {
+            "tall": self.dimensions["height"] > (screen_dimensions[1] / 64),
+            "wide": self.dimensions["width"] > (screen_dimensions[0] / 64)
+        }
+        self.corner = {
+            "top": (screen_dimensions[1] / 2) - ((self.dimensions["height"] / 2) * 64),
+            "left": (screen_dimensions[0] / 2) - ((self.dimensions["width"] / 2) * 64)
+        }
+        self.distances = {
+            "height": int(screen_dimensions[1]/128) + 1,
+            "width": int(screen_dimensions[0]/128) + 1,
         }
 
     def capture(self) -> None:
@@ -192,12 +210,15 @@ class Level:
         else:
             slides["shake"] = 3
 
-    def render(self, screen_dimensions: list[int], slides: dict, screen, resources, tiles, dt, mod=0, parallax=1, player=True):
+    def render(self, screen_dimensions: list[int], slides: dict, screen, resources, tiles, dt, mod=0, parallax=1, player=True, modsize=0):
+        # print(screen_dimensions)
         modpos = [0, 0]
-        modpos[0] = self.player[0]+2.5 if self.large["tall"] else self.corner["top"]
-        modpos[1] = self.player[1]-2.5 if self.large["wide"] else self.corner["left"]
-        for x in range(self.player[0]-8, self.player[0]+9) if self.large["tall"] else range(-8, self.dimensions["height"]+8):
-            for y in range(self.player[1]-11, self.player[1]+11) if self.large["wide"] else range(-8, self.dimensions["width"]+8):
+        modpos[0] = self.player[0] if self.large["tall"] else self.corner["top"]
+        modpos[1] = self.player[1] if self.large["wide"] else self.corner["left"]
+        for x in range(self.player[0] - self.distances["height"] - 2, self.player[0] + self.distances["height"] + 3) \
+                if self.large["tall"] else range(-8, self.dimensions["height"]+8):
+            for y in range(self.player[1] - self.distances["width"] - 2, self.player[1] + self.distances["width"] + 3) \
+                    if self.large["wide"] else range(-8, self.dimensions["width"]+8):
                 draw_floor = False
                 seed(sum(self.data[0]) + sum(self.data[-1]) + x + y)
                 if -1 <= x <= self.dimensions["height"]:
@@ -216,43 +237,45 @@ class Level:
                             draw_floor = randint(0, abs(x-self.dimensions["height"])) < 1
                 if draw_floor:
                     screen.blit(resources["sprite"]["gbrick"],
-                                (-64 + calc_place(y, self.large["tall"], modpos[1], screen_dimensions[1])
-                                 - (slides["display"][1] / parallax) - (50 / parallax),
-                                 -64 + calc_place(x, self.large["wide"], modpos[0], screen_dimensions[0])
-                                 - (slides["display"][0] / parallax) - ((50 / parallax) * mod)))
+                                (-64 + calc_place(y, self.large["wide"], modpos[1], screen_dimensions[0])
+                                 - (slides["display"][1] / parallax) - (modsize / parallax),
+                                 -64 + calc_place(x, self.large["tall"], modpos[0], screen_dimensions[1])
+                                 - (slides["display"][0] / parallax) - ((modsize / parallax) * mod)))
         for x, row in enumerate(self.data):
-            if self.large["tall"] and (x < self.player[0]-8 or x > self.player[0]+8):
+            if self.large["tall"] and (x < self.player[0] - self.distances["height"] or
+                                       x > self.player[0] + self.distances["height"] + 1):
                 continue
             for y, col in enumerate(row):
-                if self.large["wide"] and (y < self.player[1]-11 or y > self.player[1]+11):
+                if self.large["wide"] and (y < self.player[1] - self.distances["width"] or
+                                           y > self.player[1] + self.distances["width"] + 1):
                     continue
                 if 4 <= col <= 7:
                     if [x, y] == self.last_crate_moved:
                         if col == 7:
                             screen.blit(resources["sprite"]["target"],
-                                        (-64 + calc_place(y, self.large["tall"], modpos[1], screen_dimensions[1])
-                                         - (slides["display"][1] / parallax) - (50 / parallax),
-                                         -64 + calc_place(x, self.large["wide"], modpos[0], screen_dimensions[0])
-                                         - (slides["display"][0] / parallax) - ((50 / parallax) * mod)))
+                                        (calc_place(y, self.large["wide"], modpos[1], screen_dimensions[0])
+                                         - (slides["display"][1] / parallax) - (modsize / parallax),
+                                         calc_place(x, self.large["tall"], modpos[0], screen_dimensions[1])
+                                         - (slides["display"][0] / parallax) - ((modsize / parallax) * mod)))
                         screen.blit(resources["sprite"][tiles[col - 4]],
-                                    (-64 + calc_place(y, self.large["tall"], modpos[1], screen_dimensions[1])
-                                     - (slides["display"][1] / parallax) - (50 / parallax),
-                                     -64 + calc_place(x, self.large["wide"], modpos[0], screen_dimensions[0])
-                                     - (slides["display"][0] / parallax) - ((50 / parallax) * mod)))
+                                    (calc_place(y, self.large["wide"], modpos[1], screen_dimensions[0])
+                                     - (slides["display"][1] / parallax) - (modsize / parallax),
+                                     calc_place(x, self.large["tall"], modpos[0], screen_dimensions[1])
+                                     - (slides["display"][0] / parallax) - ((modsize / parallax) * mod)))
                     elif col == 4:
                         screen.blit(resources["sprite"]["rbricksheet"],
-                                    (-64 + calc_place(y, self.large["tall"], modpos[1], screen_dimensions[1])
-                                     - (slides["display"][1] / parallax) - (50 / parallax),
-                                     -64 + calc_place(x, self.large["wide"], modpos[0], screen_dimensions[0])
-                                     - (slides["display"][0] / parallax) - ((50 / parallax) * mod)),
+                                    (calc_place(y, self.large["wide"], modpos[1], screen_dimensions[0])
+                                     - (slides["display"][1] / parallax) - (modsize / parallax),
+                                     calc_place(x, self.large["tall"], modpos[0], screen_dimensions[1])
+                                     - (slides["display"][0] / parallax) - ((modsize / parallax) * mod)),
                                     area=self.precalculated_connections[x][y])
 
                     else:
                         screen.blit(resources["sprite"][tiles[col - 4]],
-                                    (-64 + calc_place(y, self.large["tall"], modpos[1], screen_dimensions[1])
-                                     - (slides["display"][1] / parallax) - (50 / parallax),
-                                     -64 + calc_place(x, self.large["wide"], modpos[0], screen_dimensions[0])
-                                     - (slides["display"][0] / parallax) - ((50 / parallax) * mod)))
+                                    (calc_place(y, self.large["wide"], modpos[1], screen_dimensions[0])
+                                     - (slides["display"][1] / parallax) - (modsize / parallax),
+                                     calc_place(x, self.large["tall"], modpos[0], screen_dimensions[1])
+                                     - (slides["display"][0] / parallax) - ((modsize / parallax) * mod)))
         if self.animation["ticks"] > 100:
             self.animation["ticks"] = 0
             self.animation["frame"] = 0 if self.animation["frame"] == 2 else self.animation["frame"]+1
@@ -261,7 +284,7 @@ class Level:
         if player:
             walkingframe = 4 * self.animation["frame"] if int((sum(slides["display"]) + sum(slides["character"])) / 10) else 0
             screen.blit(resources["sprite"]["player"][self.player[2] + walkingframe],
-                        ((608 - (slides["display"][1] / 100)) if self.large["wide"] else
+                        (((screen_dimensions[0]/2)-32 - (slides["display"][1] / 100)) if self.large["wide"] else
                          (self.corner["left"] - slides["character"][1] - slides["display"][1] + self.player[1] * 64),
-                         (446 - (slides["display"][0] / 100)) if self.large["tall"] else
+                         ((screen_dimensions[1]/2)-32 - (slides["display"][0] / 100)) if self.large["tall"] else
                          (self.corner["top"] - slides["display"][0] - slides["character"][0] + self.player[0] * 64)))
