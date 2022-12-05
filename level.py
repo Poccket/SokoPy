@@ -224,6 +224,10 @@ class Level:
                     if -1 <= x <= self.dimensions["height"]:
                         if -1 <= y <= self.dimensions["width"]:
                             draw_floor = True
+                            if 0 <= x <= self.dimensions["height"]:
+                                if 0 <= y < len(self.data[x]):
+                                    if self.data[x][y] == 4:
+                                        continue
                         else:
                             if y < 0:
                                 draw_floor = randint(0, abs(y)) < 1
