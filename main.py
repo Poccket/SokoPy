@@ -284,21 +284,31 @@ while active:
             if mode == 0:
                 if keys[K_UP]:
                     if can_press(K_UP):
-                        if menuLevel in ["root", "settings"]:
+                        if menuLevel == "root":
                             erasing = 0
                             oldMenuIndex = menuIndex
                             menuIndex = menuIndex-1 if menuIndex > 0 else menuMax
                             slides["display"][0] += (oldMenuIndex-menuIndex)*50
+                        elif menuLevel == "settings":
+                            erasing = 0
+                            oldMenuIndex = menuIndex
+                            menuIndex = menuIndex + 1 if menuIndex < len(settings)-1 else 0
+                            slides["display"][0] += (oldMenuIndex - menuIndex) * 50
                         else:
                             if lvlIndex >= lvls_can_fit:
                                 lvlIndex -= lvls_can_fit
                                 slides["display"][0] += 160
                 elif keys[K_DOWN]:
                     if can_press(K_DOWN):
-                        if menuLevel in ["root", "settings"]:
+                        if menuLevel == "root":
                             erasing = 0
                             oldMenuIndex = menuIndex
                             menuIndex = menuIndex+1 if menuIndex < menuMax else 0
+                            slides["display"][0] += (oldMenuIndex-menuIndex)*50
+                        elif menuLevel == "settings":
+                            erasing = 0
+                            oldMenuIndex = menuIndex
+                            menuIndex = menuIndex+1 if menuIndex < len(settings)-1 else 0
                             slides["display"][0] += (oldMenuIndex-menuIndex)*50
                         else:
                             if lvlIndex <= menuMax-lvls_can_fit:
@@ -439,11 +449,11 @@ while active:
                 levelTitle = menuLevel + '/' + list(lvlpack_list[menuLevel]['lvls'].values())[lvlIndex]
                 save.add_savedata('Completed', [levelTitle])
             draw_text("BigArial", "You Won!", (192, 192, 255),
-                      (640-slides["text"][0], 400-slides["text"][1]), center=True, shadow=True)
+                      ((res[0]/2)-slides["text"][0], ((res[1]/2)-80)-slides["text"][1]), center=True, shadow=True)
             draw_text("Arial", "Press R to restart or", (192, 192, 255),
-                      (640-slides["text"][0], 480-slides["text"][1]), center=True, shadow=True)
+                      ((res[0]/2)-slides["text"][0], (res[1]/2)-slides["text"][1]), center=True, shadow=True)
             draw_text("Arial", "Press ESC to leave", (192, 192, 255),
-                      (640-slides["text"][0], 520-slides["text"][1]), center=True, shadow=True)
+                      ((res[0]/2)-slides["text"][0], ((res[1]/2)+50)-slides["text"][1]), center=True, shadow=True)
     elif mode == 0:
         if setupDone != 0:
             res = pygame.display.Info()
@@ -527,11 +537,14 @@ while active:
                                 (80 + (160 * (i % lvls_can_fit)) - slides["display"][1],
                                  300 - ((lvlIndex // lvls_can_fit) * 160) - slides["display"][0] + (160 * (i // lvls_can_fit))))
             titleWidth = draw_text("BigArial", titles[0], (192, 192, 255),
-                                   (20-slides["display"][1], 90+((160*(-(lvlIndex// lvls_can_fit)))-slides["display"][0])), shadow=True)
+                                   (20-slides["display"][1],
+                                    90+((160*(-(lvlIndex // lvls_can_fit)))-slides["display"][0])), shadow=True)
             draw_text("Arial", titles[2][:-1], (128, 128, 196),
-                      (35+titleWidth-slides["display"][1], 120+((160*(-(lvlIndex// lvls_can_fit)))-slides["display"][0])), shadow=True)
+                      (35+titleWidth-slides["display"][1],
+                       120+((160*(-(lvlIndex // lvls_can_fit)))-slides["display"][0])), shadow=True)
             draw_text("Arial", lvlpack_list[menuLevel]['desc'], (128, 128, 196),
-                      (40-slides["display"][1], 150+((160*(-(lvlIndex// lvls_can_fit)))-slides["display"][0])), shadow=True)
+                      (40-slides["display"][1],
+                       150+((160*(-(lvlIndex // lvls_can_fit)))-slides["display"][0])), shadow=True)
     if debug:
         debug_show()
         #lineRes = pygame.display.Info()
