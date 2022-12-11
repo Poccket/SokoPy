@@ -3,8 +3,6 @@ import argparse
 import time
 # Limited default imports
 from contextlib import redirect_stdout
-from copy import deepcopy
-from math import floor
 from random import randint, seed, choice
 # 3rd party imports
 with redirect_stdout(None):  # This stops pygame from printing the stupid import message
@@ -52,7 +50,7 @@ resources = {
         "shade":        pygame.image.load(load_file(f"data/sprites/shade.png")).convert_alpha(),
         "vignette":     pygame.image.load(load_file(f"data/sprites/vignette.png")).convert_alpha(),
         "gbrick":       pygame.image.load(load_file(f"data/sprites/grayFloor.png")).convert_alpha(),
-        "bbrick":       pygame.image.load(load_file(f"data/sprites/grayFloorBad.png")).convert_alpha(),
+        "ggrass":       pygame.image.load(load_file(f"data/sprites/grassFloor.png")).convert_alpha(),
         "rbrick":       pygame.image.load(load_file(f"data/sprites/redBrick.png")).convert_alpha(),
         "rbricksheet":  pygame.image.load(load_file(f"data/sprites/redBrickSheet.png")).convert_alpha(),
         "crate":        pygame.image.load(load_file(f"data/sprites/crateBrown.png")).convert_alpha(),
@@ -88,7 +86,7 @@ tiles = ["rbrick", "crate", "target", "cratedark"]
 debug_info = {
     "fps": 0
 }
-debug = True
+debug = False
 
 
 def debug_show():
@@ -153,7 +151,7 @@ lvlIndex = 0
 
 lvlpack_list = lvl.get_levelpacks()
 menu_items = lvl.menu_packs(lvlpack_list)
-filedir = ""
+filedir = "tutorial.lvl"
 erase = ["Erase your save", "Are you sure?", "Save erased"]
 erasing = 0
 menu_items["set"] = "Settings"
@@ -167,6 +165,7 @@ kLast = None
 kcd = 0
 animStage = 0
 animRate = 0
+debug_info["lvl"] = "data/levels/tutorial.lvl"
 map_content = lvl.decode_lvl("data/levels/tutorial.lvl")
 currPos = [-1, -1]
 last_state = [map_content, currPos]
@@ -267,8 +266,10 @@ while active:
                         else:
                             newMode = 1
                             filedir = menuLevel + '/' + list(lvlpack_list[menuLevel]['lvls'].values())[lvlIndex]
-                    elif event.key == K_ESCAPE:
+                    elif event.key == K_ESCAPE and menuLevel != "root":
                         newMenuLevel = "root"
+                    elif event.key == K_r:
+                        setupDone = -1
                 elif mode == 1 and setupDone == 1:
                     if event.key == K_r:
                         newMode = 1
@@ -419,7 +420,8 @@ while active:
         res = [res.current_w, res.current_h]
         if setupDone != 1:
             last_state = []
-            map_content = lvl.Level("data/levels/" + filedir, res)
+            debug_info["lvl"] = f"data/levels/{filedir}"
+            map_content = lvl.Level(f"data/levels/{filedir}", res)
             setupDone = 1
             charSlideMod = 100
             slides["character"][0] = 3000
@@ -463,6 +465,7 @@ while active:
             walking = False
             menuBackLevelPack = choice(list(menu_items.keys())[:-3])
             menuBackLevel = choice(list(lvlpack_list[menuBackLevelPack]['lvls'].values()))
+            debug_info["lvl"] = f"data/levels/{menuBackLevelPack}/{menuBackLevel}"
             map_content = lvl.Level(f"data/levels/{menuBackLevelPack}/{menuBackLevel}", res)
             parallaxMulti = 2
             slideDiv = 7

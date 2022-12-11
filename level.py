@@ -4,6 +4,7 @@ from math import floor
 from random import randint, seed
 from copy import deepcopy
 from pygame import surface
+import pygame
 
 # blocks:
 # new line      , empty space  , walkable  , player
@@ -104,6 +105,7 @@ class Level:
             "height": len(self.data) - 1,
             "width": max([len(i) for i in self.data])
         }
+        self.widest = [len(i[:i.index(1) if 1 in i else -1])+1 for i in self.data].index(self.dimensions["width"])
         self.large = {
             "tall": self.dimensions["height"] > (screen_dimensions[1]/64),
             "wide": self.dimensions["width"] > (screen_dimensions[0]/64)
@@ -134,6 +136,7 @@ class Level:
             "frame": 0
         }
         self.background = None
+        self.inside = None
 
     def update_res(self, screen_dimensions) -> None:
         self.large = {
@@ -213,8 +216,79 @@ class Level:
             slides["shake"] = 3
 
     def render(self, screen_dimensions: list[int], slides: dict, screen, resources, tiles,
-               dt, mod=0, parallax=1, player=True, modsize=0): # TODO: Too many goddamn variables
+               dt, mod=0, parallax=1, player=True, modsize=0):  # TODO: Too many goddamn variables
         if not self.background:
+            if not self.inside:
+                self.inside = []
+                for x in range(-12, self.dimensions["height"] + 12):
+                    self.inside += [[0 for i in range(-12, self.dimensions["width"] + 12)]]
+                self.inside[self.player[0]][self.player[1]] = 1
+                processing = True
+                while processing:
+                    processing = False
+                    for x, row in enumerate(self.inside):
+                        for y, col in enumerate(row):
+                            if col == 1:
+                                if x > 0:
+                                    #if y > 0 and self.data[x - 1][y - 1] != 4:
+                                    #    if self.inside[x - 1][y - 1] != -1:
+                                    #        self.inside[x - 1][y - 1] = 1
+                                    #        processing = True
+                                    #else:
+                                    #    self.inside[x - 1][y - 1] = -2
+                                    if self.data[x - 1][y] != 4:
+                                        if self.inside[x - 1][y] != -1:
+                                            self.inside[x - 1][y] = 1
+                                            processing = True
+                                    else:
+                                        self.inside[x - 1][y] = -2
+                                    #if y < len(self.data[x]) - 1 and self.data[x - 1][y + 1] != 4:
+                                    #    if self.inside[x - 1][y + 1] != -1:
+                                    #        self.inside[x - 1][y + 1] = 1
+                                    #        processing = True
+                                    #else:
+                                    #    self.inside[x - 1][y + 1] = -2
+                                if y > 0 and self.data[x][y - 1] != 4:
+                                    if self.inside[x][y - 1] != -1:
+                                        self.inside[x][y - 1] = 1
+                                        processing = True
+                                else:
+                                    self.inside[x][y - 1] = -2
+                                if self.data[x][y] != 4:
+                                    if self.inside[x][y] != -1:
+                                        self.inside[x][y] = 1
+                                        processing = True
+                                else:
+                                    self.inside[x][y] = -2
+                                if y < len(self.data[x]) - 1 and self.data[x][y + 1] != 4:
+                                    if self.inside[x][y + 1] != -1:
+                                        self.inside[x][y + 1] = 1
+                                        processing = True
+                                else:
+                                    self.inside[x][y + 1] = -2
+                                if x < len(self.data):
+                                    #if y > 0 and self.data[x + 1][y - 1] != 4:
+                                    #    if self.inside[x + 1][y - 1] != -1:
+                                    #        self.inside[x + 1][y - 1] = 1
+                                    #        processing = True
+                                    #else:
+                                    #    self.inside[x + 1][y - 1] = -2
+                                    if self.data[x + 1][y] != 4:
+                                        if self.inside[x + 1][y] != -1:
+                                            self.inside[x + 1][y] = 1
+                                            processing = True
+                                    else:
+                                        self.inside[x + 1][y] = -2
+                                    #if y < len(self.data) - 1 and self.data[x + 1][y + 1] != 4:
+                                    #    if self.inside[x + 1][y + 1] != -1:
+                                    #        self.inside[x + 1][y + 1] = 1
+                                    #        processing = True
+                                    #else:
+                                    #    self.inside[x + 1][y + 1] = -2
+                                self.inside[x][y] = -1
+                for x, row in enumerate(self.inside):
+                    for y, col in enumerate(row):
+                        continue
             self.background = surface.Surface(((self.dimensions["width"]*64)+1536, (self.dimensions["height"]*64)+1536))
             self.background.fill((10, 10, 32))
             for x in range(-12, self.dimensions["height"]+12):
@@ -223,10 +297,34 @@ class Level:
                     draw_floor = False
                     if -1 <= x <= self.dimensions["height"]:
                         if -1 <= y <= self.dimensions["width"]:
-                            draw_floor = True
+                            if x < len(self.data):
+                                if y < len(self.data[x])-1:
+                                    if self.data[x][y+1] == 4:
+                                        draw_floor = True
+                                if 0 < y < len(self.data[x])+1:
+                                    if self.data[x][y-1] == 4:
+                                        draw_floor = True
+                                if -1 <= x < len(self.data)-1:
+                                    if y < len(self.data[x + 1]) - 1:
+                                        if self.data[x + 1][y + 1] == 4:
+                                            draw_floor = True
+                                    if 0 < y < len(self.data[x + 1]) + 1:
+                                        if self.data[x + 1][y - 1] == 4:
+                                            draw_floor = True
+                                if 1 <= x < len(self.data):
+                                    if y < len(self.data[x - 1]) - 1:
+                                        if self.data[x - 1][y + 1] == 4:
+                                            draw_floor = True
+                                    if 0 < y < len(self.data[x - 1]) + 1:
+                                        if self.data[x - 1][y - 1] == 4:
+                                            draw_floor = True
                             if 0 <= x <= self.dimensions["height"]:
                                 if 0 <= y < len(self.data[x]):
                                     if self.data[x][y] == 4:
+                                        continue
+                                    elif self.inside[x][y]:
+                                        self.background.blit(resources["sprite"]["gbrick"],
+                                                             ((y + 11) * 64, (x + 11) * 64))
                                         continue
                         else:
                             if y < 0:
@@ -240,20 +338,18 @@ class Level:
                             elif x > self.dimensions["height"] + 1:
                                 draw_floor = randint(0, abs(x - self.dimensions["height"])) < 1
                     if draw_floor:
-                        self.background.blit(resources["sprite"]["gbrick"], ((y+11)*64, (x+11)*64))
+                        self.background.blit(resources["sprite"]["ggrass"], ((y+11)*64, (x+11)*64))
             for x, row in enumerate(self.data):
                 for y, col in enumerate(row):
                     if 4 <= col <= 7:
-                        if col == 5:
-                            continue
-                        elif col == 4:
+                        if col == 4:
                             self.background.blit(resources["sprite"]["rbricksheet"],
                                                  ((y + 12) * 64, (x + 12) * 64),
                                                  area=self.precalculated_connections[x][y])
                         elif col == 7:
                             self.background.blit(resources["sprite"]["target"],
                                                  ((y + 12) * 64, (x + 12) * 64))
-                        else:
+                        elif col != 5:
                             self.background.blit(resources["sprite"][tiles[col - 4]],
                                                  ((y + 12) * 64, (x + 12) * 64))
         modpos = [0, 0]
