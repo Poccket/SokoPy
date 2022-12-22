@@ -40,27 +40,40 @@ def bitstring_to_bytes(s: str) -> bytes:
         v >>= 8
     return bytes(b[::-1])
 
+
 def write_lvl(filename: str, outdata: bytes) -> None:
     """
     Writes level data (in binary) to a file
     """
     with open(filename + '.lvl', "w+b") as outfile:
         outfile.write(outdata)
-    print("Wrote", len(outdata), "bytes to", filename + '.lvl')
+    print("INFO: Wrote", len(outdata), "bytes to", filename + '.lvl')
+
 
 def textlist_to_lvl(lvldata: list) -> bytes:
     """
     Converts a list (each item being a line) into level data (in binary)
     """
     lvl_binary = ""
+    crate_count = 0
+    target_count = 0
     for x in lvldata:
         for y in x:
+            if y == "$":
+                crate_count += 1
+            if y == ".":
+                target_count += 1
+            if y == "*":
+                crate_count += 1
+                target_count += 1
             lvl_binary += Blocks[y]
         lvl_binary += "0000"
     if len(lvl_binary) % 8:
         lvl_binary += "0000"
-    return bitstring_to_bytes(lvl_binary)
+    return (bitstring_to_bytes(lvl_binary), crate_count, target_count)
 
+
+# TODO: Make it so this script produces one file that is a levelpack, metadata included if possible
 if __name__ == "__main__":
     if len(sys.argv) < 2:
         print("Please give a file to convert\n\
@@ -78,7 +91,11 @@ if __name__ == "__main__":
         if line[0] == ";":
             if started:
                 to_write = textlist_to_lvl(lvl)
-                write_lvl(str(lvl_num).zfill(2), to_write)
+                if to_write[1] != to_write[2]:
+                    print(f"WARNING: Level may be incorrect!\n    Filename: {sys.argv[1]}, Level #: {lvl_num}\n",
+                          f"   {to_write[1]} crates seen, but {to_write[2]} targets seen.\nPress ENTER to continue, CTRL+C to quit execution")
+                    input()
+                write_lvl(str(lvl_num).zfill(2), to_write[0])
                 lvl_num += 1
                 lvl = []
             else:
@@ -88,5 +105,5 @@ if __name__ == "__main__":
             lvl += [line.rstrip()]
     if lvl:
         to_write = textlist_to_lvl(lvl)
-        write_lvl(str(lvl_num).zfill(2), to_write)
-    print("Done!")
+        write_lvl(str(lvl_num).zfill(2), to_write[0])
+    print("INFO: Done!")
