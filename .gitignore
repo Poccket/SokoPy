@@ -1,5 +1,5 @@
 # Savedata
-sokopy.save
+*.save
 
 # Scalene profile
 profile.json

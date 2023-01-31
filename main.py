@@ -9,7 +9,7 @@ with redirect_stdout(None):  # This stops pygame from printing the stupid import
     import pygame
 from pygame.locals import (
     K_SPACE, K_ESCAPE, K_RETURN, KEYDOWN, MOUSEBUTTONDOWN,
-    K_BACKSLASH, K_UP, K_DOWN, K_LEFT, K_RIGHT, K_r, K_z
+    K_BACKSLASH, K_BACKSPACE, K_UP, K_DOWN, K_LEFT, K_RIGHT, K_r, K_z
 )
 # Local imports
 import lang
@@ -26,7 +26,8 @@ args = parser.parse_args()
 if args.lang not in lang.languages:
     raise ValueError(f"Language selected ({args.lang}) is not present")
 
-save.init_save()
+saves = save.init_save(False)
+username = saves[0]
 
 
 def load_file(file_name):
@@ -87,6 +88,7 @@ tiles = ["rbrick", "crate", "target", "cratedark"]
 debug_info = {
     "fps": 0
 }
+import base64
 debug = False
 
 
@@ -171,29 +173,37 @@ debug_info["lvl"] = "data/levels/tutorial.lvl"
 map_content = lvl.decode_lvl("data/levels/tutorial.lvl")
 currPos = [-1, -1]
 last_state = [map_content, currPos]
-settings = {
-    "shake": {"title": "Screenshake", "value": 10, "range": [0, 20]},
-    "anim":  {"title": "Animated Slides", "value": True, "range": [0, 1]},
-    "slide": {"title": "Slide Speed", "value": 3, "range": [1, 15]},
-    "erase": {"title": erase[erasing], "value": None, "range": [None, None]}
-}
-for setting in list(settings.keys()):
-    if settings[setting]["value"] is None:
-        save.add_savedata('Settings', [setting, None], categorytype="dict")
-    elif setsave := save.check_savedata('Settings', setting):
-        if isinstance(setsave, int):
-            if setsave < settings[setting]["range"][0]:
-                settings[setting]["value"] = settings[setting]["range"][0]
-                save.add_savedata('Settings', [setting, settings[setting]["value"]], categorytype="dict")
-            elif setsave > settings[setting]["range"][1]:
-                settings[setting]["value"] = settings[setting]["range"][1]
-                save.add_savedata('Settings', [setting, settings[setting]["value"]], categorytype="dict")
-            else:
+def load_settings():
+    settings = {
+        "prof":  {"title": "Profile", "value": username.capitalize(), "range": 'str'},
+        "shake": {"title": "Screenshake", "value": 10, "range": [0, 20]},
+        "anim":  {"title": "Animated Slides", "value": True, "range": [0, 1]},
+        "slide": {"title": "Slide Speed", "value": 3, "range": [1, 15]},
+        "erase": {"title": erase[erasing], "value": None, "range": [None, None]}
+    }
+    for setting in list(settings.keys()):
+        if setting == "prof":
+            continue
+        if settings[setting]["value"] is None:
+            save.add_savedata('Settings', [setting, None], username, categorytype="dict")
+        elif setsave := save.check_savedata('Settings', setting, username):
+            if isinstance(setsave, int):
+                if setsave < settings[setting]["range"][0]:
+                    settings[setting]["value"] = settings[setting]["range"][0]
+                    save.add_savedata('Settings', [setting, settings[setting]["value"]], username, categorytype="dict")
+                elif setsave > settings[setting]["range"][1]:
+                    settings[setting]["value"] = settings[setting]["range"][1]
+                    save.add_savedata('Settings', [setting, settings[setting]["value"]], username, categorytype="dict")
+                else:
+                    settings[setting]["value"] = setsave
+            elif isinstance(setsave, bool):
                 settings[setting]["value"] = setsave
-        elif isinstance(setsave, bool):
-            settings[setting]["value"] = setsave
-    else:
-        save.add_savedata('Settings', [setting, settings[setting]["value"]], categorytype="dict")
+        else:
+            save.add_savedata('Settings', [setting, settings[setting]["value"]], username, categorytype="dict")
+    return settings
+
+
+settings = load_settings()
 
 
 def can_press(key):
@@ -208,7 +218,7 @@ def can_press(key):
         return True
     return False
 
-
+typing = False
 while active:
     if focused:
         dt = clock.tick(60)
@@ -245,6 +255,12 @@ while active:
                 if event.key == K_BACKSLASH:
                     debug = not debug
                 if mode == 0 and setupDone == 0:
+                    if typing:
+                        if event.key == K_BACKSPACE:
+                            settings["prof"]["value"] = settings["prof"]["value"][:-1]
+                        else:
+                            if event.unicode.isalnum():
+                                settings["prof"]["value"] += event.unicode
                     if event.key == K_RETURN or event.key == K_SPACE:
                         if menuLevel == "root":
                             if menuIndex == 0:
@@ -260,14 +276,21 @@ while active:
                             if menuIndex == len(settings.keys())-1:
                                 if erasing == 1:
                                     erasing = 2
-                                    save.erase_save()
+                                    save.erase_save(username)
+                                    saves = save.list_saves()
+                                    if len(saves) <= 0:
+                                        settings["prof"]["value"] = "User"
+                                    else:
+                                        settings["prof"]["value"] = saves[0]
                                     slides["shake"] = 60
                                 else:
                                     slides["shake"] = 30
                                     erasing = 1
                             else:
                                 setting = list(settings.keys())[menuIndex]
-                                if settings[setting]["value"] is not None:
+                                if settings[setting]["range"] == 'str':
+                                    typing = not typing
+                                elif settings[setting]["value"] is not None:
                                     if isinstance(settings[setting]["value"], int):
                                         if settings[setting]["value"] >= settings[setting]["range"][1]:
                                             settings[setting]["value"] = settings[setting]["range"][0]
@@ -276,14 +299,18 @@ while active:
                                     # elif isinstance(settings[setting]["value"], bool):
                                     #    settings[setting]["value"] = not settings[setting]["value"]
                                     save.add_savedata('Settings', [setting, settings[setting]["value"]],
-                                                      categorytype="dict")
+                                                      username, categorytype="dict")
                         else:
                             newMode = 1
                             filedir = menuLevel + '/' + list(lvlpack_list[menuLevel]['lvls'].values())[lvlIndex]
                     elif event.key == K_ESCAPE and menuLevel != "root":
+                        if typing:
+                            typing = False
                         newMenuLevel = "root"
                         slideDiv = 25 / settings["slide"]["value"]
-                    elif event.key == K_r:
+                    elif not typing and event.key == K_r:
+                        if typing:
+                            typing = False
                         setupDone = -1
                 elif mode == 1 and setupDone == 1:
                     if event.key == K_r:
@@ -311,6 +338,8 @@ while active:
                             menuIndex = menuIndex-1 if menuIndex > 0 else menuMax
                             slides["display"][0] += (oldMenuIndex-menuIndex)*50
                         elif menuLevel == "settings":
+                            if typing:
+                                typing = False
                             erasing = 0
                             oldMenuIndex = menuIndex
                             menuIndex = menuIndex - 1 if menuIndex > 0 else len(settings)-1
@@ -327,6 +356,8 @@ while active:
                             menuIndex = menuIndex+1 if menuIndex < menuMax else 0
                             slides["display"][0] += (oldMenuIndex-menuIndex)*50
                         elif menuLevel == "settings":
+                            if typing:
+                                typing = False
                             erasing = 0
                             oldMenuIndex = menuIndex
                             menuIndex = menuIndex+1 if menuIndex < len(settings)-1 else 0
@@ -338,8 +369,17 @@ while active:
                 elif keys[K_RIGHT]:
                     if can_press(K_RIGHT):
                         if menuLevel == "settings":
+                            if typing:
+                                typing = False
                             setting = list(settings.keys())[menuIndex]
                             if settings[setting]["value"] is not None:
+                                if setting == "prof":
+                                    saves = save.list_saves()
+                                    currSave = saves.index(username.lower())
+                                    if currSave == len(saves)-1:
+                                        settings[setting]["value"] = saves[0]
+                                    else:
+                                        settings[setting]["value"] = saves[currSave+1]
                                 if isinstance(settings[setting]["value"], int):
                                     if settings[setting]["value"] >= settings[setting]["range"][1]:
                                         settings[setting]["value"] = settings[setting]["range"][1]
@@ -348,7 +388,7 @@ while active:
                                 elif isinstance(settings[setting]["value"], bool):
                                     settings[setting]["value"] = not settings[setting]["value"]
                                 save.add_savedata('Settings', [setting, settings[setting]["value"]],
-                                                  categorytype="dict")
+                                                  username, categorytype="dict")
                         elif menuLevel != "root":
                             if lvlIndex < menuMax:
                                 lvlIndex += 1
@@ -357,8 +397,14 @@ while active:
                 elif keys[K_LEFT]:
                     if can_press(K_LEFT):
                         if menuLevel == "settings":
+                            if typing:
+                                typing = False
                             setting = list(settings.keys())[menuIndex]
                             if settings[setting]["value"] is not None:
+                                if setting == "prof":
+                                    saves = save.list_saves()
+                                    currSave = saves.index(username.lower())
+                                    settings[setting]["value"] = saves[currSave-1]
                                 if isinstance(settings[setting]["value"], int):
                                     if settings[setting]["value"] <= settings[setting]["range"][0]:
                                         settings[setting]["value"] = settings[setting]["range"][0]
@@ -367,7 +413,7 @@ while active:
                                 elif isinstance(settings[setting]["value"], bool):
                                     settings[setting]["value"] = not settings[setting]["value"]
                                 save.add_savedata('Settings', [setting, settings[setting]["value"]],
-                                                  categorytype="dict")
+                                                  username, categorytype="dict")
                         elif menuLevel != "root":
                             if lvlIndex > 0:
                                 lvlIndex -= 1
@@ -392,6 +438,11 @@ while active:
                 else:
                     kHoldDiv = 1
                     kLast = None
+        settings["prof"]["value"] = settings["prof"]["value"].capitalize()
+        if not typing:
+            username = settings["prof"]["value"].lower()
+            save.init_save(username)
+            settings = load_settings()
         if newMode != -1:
             if slides["display"][0] < 2000:
                 slides["display"][0] += max(1+abs(slides["display"][0]/10), 1)
@@ -487,7 +538,7 @@ while active:
             if menuLevel != "root":
                 levelList = list(lvlpack_list[menuLevel]['lvls'].values())
                 levelTitle = menuLevel + '/' + levelList[lvlIndex]
-                save.add_savedata('Completed', [levelTitle])
+                save.add_savedata('Completed', [levelTitle], username)
                 if lvlIndex < len(levelList) - 1:
                     nextLevelLine = True
                     draw_text("Arial", "Press RETURN to play the next level", (192, 192, 255),
@@ -591,7 +642,7 @@ while active:
                     draw_text("BigArial", str(i+1), (128, 128, 196),
                               (50+(160*(i % lvls_can_fit))-slides["display"][1],
                                290-((lvlIndex// lvls_can_fit)*160)-slides["display"][0]+(160*(i// lvls_can_fit))), shadow=True, center=True)
-                if save.check_savedata('Completed', menuLevel + '/' + list(lvlpack_list[menuLevel]['lvls'].values())[i]):
+                if save.check_savedata('Completed', menuLevel + '/' + list(lvlpack_list[menuLevel]['lvls'].values())[i], username):
                     screen.blit(resources["sprite"]["lvlchecked"],
                                 (80 + (160 * (i % lvls_can_fit)) - slides["display"][1],
                                  300 - ((lvlIndex // lvls_can_fit) * 160) - slides["display"][0] + (160 * (i // lvls_can_fit))))
