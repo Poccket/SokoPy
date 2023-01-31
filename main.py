@@ -219,6 +219,8 @@ def can_press(key):
     return False
 
 typing = False
+if len(saves) > 1:
+    menuLevel = "savePicker"
 while active:
     if focused:
         dt = clock.tick(60)
@@ -272,6 +274,9 @@ while active:
                                 newMenuLevel = "settings"
                             elif menuIndex == len(menu_items)-1:
                                 active = False
+                        elif menuLevel == "savePicker":
+                            settings["prof"]["value"] = saves[menuIndex]
+                            newMenuLevel = "root"
                         elif menuLevel == "settings":
                             if menuIndex == len(settings.keys())-1:
                                 if erasing == 1:
@@ -332,7 +337,7 @@ while active:
             if mode == 0:
                 if keys[K_UP]:
                     if can_press(K_UP):
-                        if menuLevel == "root":
+                        if menuLevel in ["root", "savePicker"]:
                             erasing = 0
                             oldMenuIndex = menuIndex
                             menuIndex = menuIndex-1 if menuIndex > 0 else menuMax
@@ -350,7 +355,7 @@ while active:
                                 slides["display"][0] += 160
                 elif keys[K_DOWN]:
                     if can_press(K_DOWN):
-                        if menuLevel == "root":
+                        if menuLevel in ["root", "savePicker"]:
                             erasing = 0
                             oldMenuIndex = menuIndex
                             menuIndex = menuIndex+1 if menuIndex < menuMax else 0
@@ -550,6 +555,10 @@ while active:
                       ((res[1]/2)+(50*nextLevelLine))-slides["text"][0]), center=True, shadow=True)
     elif mode == 0:
         if setupDone != 0:
+            titleRainbow = [255, 192, 192]
+            newLvlTimer = -10000
+            lvlDirW = randint(-1, 1)
+            lvlDirH = randint(-1, 1)
             res = pygame.display.Info()
             res = [res.current_w, res.current_h]
             setupDone = 0
@@ -567,27 +576,62 @@ while active:
             map_content.update_res(res)
             resUpdated = False
         if menuLevel == "root":
+            newLvlTimer += dt*max(abs(newLvlTimer)/5000, 2)
+            newLvlTimer = round(newLvlTimer)
+            if newLvlTimer > 150000:
+                menuBackLevelPack = choice(list(menu_items.keys())[1:-3])
+                menuBackLevel = choice(list(lvlpack_list[menuBackLevelPack]['lvls'].values()))
+                debug_info["lvl"] = f"data/levels/{menuBackLevelPack}/{menuBackLevel}"
+                map_content = lvl.Level(f"data/levels/{menuBackLevelPack}/{menuBackLevel}", res)
+                newLvlTimer = -150000
+                lvlDirW = randint(-1, 1)
+                lvlDirH = randint(-1, 1)
             lvlIndex = 0
             menuMax = len(menu_items)-1
-            map_content.render(res, slides, screen, resources, tiles, dt, mod=menuIndex, parallax=3, player=False, modsize=50)
+            lvlModH = menuIndex + ((newLvlTimer / 1500) * lvlDirH)
+            lvlModW = (newLvlTimer / 1200) * lvlDirW
+            map_content.render(res, slides, screen, resources, tiles, dt, mod=lvlModH, modw=lvlModW, parallax=3, player=False, modsize=50)
             screen.blit(resources["sprite"]["shade"], (0, 0))
             biggestItem = 0
             for i, item in enumerate(menu_items.values()):
                 itemSize = draw_text("Arial", item[:item.index("(")] if "(" in item else item,
-                                     (192, 192, 255) if i == menuIndex else (128, 128, 196),
-                                     ((50-slides["display"][1])+(slides["trans"][1]*(i+1)/2),
+                                     titleRainbow if i == menuIndex else (128, 128, 196),
+                                     ((50-slides["display"][1])+(slides["trans"][1]*(i+1)),
                                       240+((50*(i-menuIndex))-slides["display"][0])),
                                      shadow=True)
                 if itemSize > biggestItem:
                     biggestItem = itemSize
             for i, item in enumerate(menu_items.values()):
                 if "(" in item:
+                    if i == menuIndex:
+                        extraRainbow = [titleRainbow[0]-64, titleRainbow[1]-64, titleRainbow[2]-64]
                     draw_text("Arial", item[item.index("("):],
-                              (192, 192, 255) if i == menuIndex else (96, 96, 128),
-                              ((biggestItem+100-slides["display"][1])+(slides["trans"][1]*(i+1)/2),
+                              extraRainbow if i == menuIndex else (96, 96, 128),
+                              ((biggestItem+100-slides["display"][1])+(slides["trans"][1]*(i+1)),
                                240+((50*(i-menuIndex))-slides["display"][0])),
                               shadow=True, center=False)
-            titleWidth = draw_text("BigArial", lang.languages[args.lang][0], (192, 192, 255),
+            if titleRainbow[0] >= 255:
+                if titleRainbow[2] > 160:
+                    titleRainbow[2] -= 1
+                else:
+                    titleRainbow[1] += 1
+                    if titleRainbow[1] >= 255:
+                        titleRainbow[0] -= 1
+            elif titleRainbow[1] >= 255:
+                if titleRainbow[0] > 160:
+                    titleRainbow[0] -= 1
+                else:
+                    titleRainbow[2] += 1
+                    if titleRainbow[2] >= 255:
+                        titleRainbow[1] -= 1
+            elif titleRainbow[2] >= 255:
+                if titleRainbow[1] > 160:
+                    titleRainbow[1] -= 1
+                else:
+                    titleRainbow[0] += 1
+                    if titleRainbow[0] >= 255:
+                        titleRainbow[2] -= 1
+            titleWidth = draw_text("BigArial", lang.languages[args.lang][0], titleRainbow,
                                    (20-slides["display"][1], 90+((50*(-menuIndex))-slides["display"][0])), shadow=True)
             screen.blit(resources["sprite"]["player"][2], (128-slides["display"][1],
                                                            90+((50*(-menuIndex))-slides["display"][0])))
@@ -621,6 +665,23 @@ while active:
                       (45+titleWidth-slides["display"][1], 120+((50*(-menuIndex))-slides["display"][0])), shadow=True)
             draw_text("Arial", lang.languages[args.lang][2], (128, 128, 196),
                       (40-slides["display"][1], 150+((50*(-menuIndex))-slides["display"][0])), shadow=True)
+        elif menuLevel == "savePicker":
+            lvlIndex = 0
+            menuMax = len(saves)-1
+            for i, item in enumerate(saves):
+                itemSize = draw_text("Arial", item.capitalize(),
+                                     (192, 192, 255) if i == menuIndex else (128, 128, 196),
+                                     ((50-slides["display"][1])+(slides["trans"][1]*(i+1)/2),
+                                      240+((50*(i-menuIndex))-slides["display"][0])),
+                                     shadow=True)
+                screen.blit(resources["sprite"]["player"][2], (((-10)-slides["display"][1])+(slides["trans"][1]*(i+1)/2),
+                 220+((50*(i-menuIndex))-slides["display"][0])))
+            titleWidth = draw_text("BigArial", lang.languages[args.lang][17], (192, 192, 255),
+                                   (20-slides["display"][1], 90+((50*(-menuIndex))-slides["display"][0])), shadow=True)
+            draw_text("Arial", lang.languages[args.lang][18], (128, 128, 196),
+                      (40-slides["display"][1], 150+((50*(-menuIndex))-slides["display"][0])), shadow=True)
+            draw_text("Arial", lang.languages[args.lang][19], (128, 128, 196),
+                      (40-slides["display"][1], 190+((50*(-menuIndex))-slides["display"][0])), shadow=True)
         else:
             titles = lvlpack_list[menuLevel]['title'].partition('(')
             levelList = list(lvlpack_list[menuLevel]['lvls'].keys())
