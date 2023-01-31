@@ -110,6 +110,11 @@ class Level:
             "tall": self.dimensions["height"] > (screen_dimensions[1]/64),
             "wide": self.dimensions["width"] > (screen_dimensions[0]/64)
         }
+        self.edge = {
+            "horizontal": round((screen_dimensions[1]/64)/2)-2,
+            "vertical": round((screen_dimensions[0]/64)/2)-2
+        }
+        self.notEdge = [self.large["tall"], self.large["wide"]]
         self.corner = {
             "top": (screen_dimensions[1]/2) - ((self.dimensions["height"]/2)*64),
             "left": (screen_dimensions[0]/2) - ((self.dimensions["width"]/2)*64)
@@ -151,6 +156,11 @@ class Level:
             "height": int(screen_dimensions[1]/128) + 1,
             "width": int(screen_dimensions[0]/128) + 1,
         }
+        self.edge = {
+            "horizontal": round((screen_dimensions[1]/64)/2)-2,
+            "vertical": round((screen_dimensions[0]/64)/2)-2
+        }
+        self.notEdge = [self.large["tall"], self.large["wide"]]
 
     def capture(self) -> None:
         if len(self.history) > 100:
@@ -165,12 +175,13 @@ class Level:
         self.player = self.history[-1]["player"]
         self.history.pop(-1)
 
-    def check_win(self) -> bool:
+    def check_win(self) -> int:
+        targets = 0
         for x in self.data:
             for y in x:
                 if y == 5:
-                    return False
-        return True
+                    targets += 1
+        return targets
 
     def move_player(self, direction: list[int], slides):
         self.player[2] = (0 if direction[0] == -1 else 2) if direction[0] else (3 if direction[1] == -1 else 1)
@@ -178,11 +189,11 @@ class Level:
             self.capture()
             self.player[0] += direction[0]
             self.player[1] += direction[1]
-            if self.large["tall"]:
+            if self.notEdge[0]:
                 slides["display"][0] -= 64*direction[0]
             else:
                 slides["character"][0] += 64*direction[0]
-            if self.large["wide"]:
+            if self.notEdge[1]:
                 slides["display"][1] -= 64*direction[1]
             else:
                 slides["character"][1] += 64*direction[1]
@@ -202,11 +213,11 @@ class Level:
                 slides["crate"][1] += 64*direction[1]
                 self.player[0] += direction[0]
                 self.player[1] += direction[1]
-                if self.large["tall"]:
+                if self.notEdge[0]:
                     slides["display"][0] -= 64*direction[0]
                 else:
                     slides["character"][0] += 64*direction[0]
-                if self.large["wide"]:
+                if self.notEdge[1]:
                     slides["display"][1] -= 64*direction[1]
                 else:
                     slides["character"][1] += 64*direction[1]
@@ -221,7 +232,7 @@ class Level:
             if not self.inside:
                 self.inside = []
                 for x in range(-12, self.dimensions["height"] + 12):
-                    self.inside += [[0 for i in range(-12, self.dimensions["width"] + 12)]]
+                    self.inside += [[0 for _ in range(-12, self.dimensions["width"] + 12)]]
                 self.inside[self.player[0]][self.player[1]] = 1
                 processing = True
                 while processing:
@@ -230,24 +241,12 @@ class Level:
                         for y, col in enumerate(row):
                             if col == 1:
                                 if x > 0:
-                                    #if y > 0 and self.data[x - 1][y - 1] != 4:
-                                    #    if self.inside[x - 1][y - 1] != -1:
-                                    #        self.inside[x - 1][y - 1] = 1
-                                    #        processing = True
-                                    #else:
-                                    #    self.inside[x - 1][y - 1] = -2
                                     if self.data[x - 1][y] != 4:
                                         if self.inside[x - 1][y] != -1:
                                             self.inside[x - 1][y] = 1
                                             processing = True
                                     else:
                                         self.inside[x - 1][y] = -2
-                                    #if y < len(self.data[x]) - 1 and self.data[x - 1][y + 1] != 4:
-                                    #    if self.inside[x - 1][y + 1] != -1:
-                                    #        self.inside[x - 1][y + 1] = 1
-                                    #        processing = True
-                                    #else:
-                                    #    self.inside[x - 1][y + 1] = -2
                                 if y > 0 and self.data[x][y - 1] != 4:
                                     if self.inside[x][y - 1] != -1:
                                         self.inside[x][y - 1] = 1
@@ -267,28 +266,13 @@ class Level:
                                 else:
                                     self.inside[x][y + 1] = -2
                                 if x < len(self.data):
-                                    #if y > 0 and self.data[x + 1][y - 1] != 4:
-                                    #    if self.inside[x + 1][y - 1] != -1:
-                                    #        self.inside[x + 1][y - 1] = 1
-                                    #        processing = True
-                                    #else:
-                                    #    self.inside[x + 1][y - 1] = -2
                                     if self.data[x + 1][y] != 4:
                                         if self.inside[x + 1][y] != -1:
                                             self.inside[x + 1][y] = 1
                                             processing = True
                                     else:
                                         self.inside[x + 1][y] = -2
-                                    #if y < len(self.data) - 1 and self.data[x + 1][y + 1] != 4:
-                                    #    if self.inside[x + 1][y + 1] != -1:
-                                    #        self.inside[x + 1][y + 1] = 1
-                                    #        processing = True
-                                    #else:
-                                    #    self.inside[x + 1][y + 1] = -2
                                 self.inside[x][y] = -1
-                for x, row in enumerate(self.inside):
-                    for y, col in enumerate(row):
-                        continue
             self.background = surface.Surface(((self.dimensions["width"]*64)+1536, (self.dimensions["height"]*64)+1536))
             self.background.fill((10, 10, 32))
             for x in range(-12, self.dimensions["height"]+12):
@@ -353,30 +337,49 @@ class Level:
                             self.background.blit(resources["sprite"][tiles[col - 4]],
                                                  ((y + 12) * 64, (x + 12) * 64))
         modpos = [0, 0]
-        modpos[1] = self.player[1] if self.large["wide"] else self.corner["left"]
-        modpos[0] = self.player[0] if self.large["tall"] else self.corner["top"]
+        observpos = [0, 0]
+        if self.large["wide"]:
+            modpos[1] = min(max(self.edge["vertical"], self.player[1]), self.dimensions["width"]-self.edge["vertical"])
+            observpos[1] = self.player[1]-modpos[1]
+            if self.notEdge[1]:
+                self.notEdge[1] = self.edge["vertical"] < self.player[1] < self.dimensions["width"] - self.edge["vertical"]
+            else:
+                self.notEdge[1] = self.edge["vertical"] < self.player[1] < self.dimensions["width"] - self.edge["vertical"]
+                if self.notEdge[1]:
+                    slides["display"][1] += 64*(self.player[2]-2)
+                    slides["character"][1] += 64*(self.player[2]-2)
+        else:
+            modpos[1] = self.corner["left"]
+        if self.large["tall"]:
+            modpos[0] = min(max(self.edge["horizontal"], self.player[0]), self.dimensions["height"]-self.edge["horizontal"])
+            observpos[0] = self.player[0]-modpos[0]
+            if self.notEdge[0]:
+                self.notEdge[0] = self.edge["horizontal"] < self.player[0] < self.dimensions["height"] - self.edge["horizontal"]
+            else:
+                self.notEdge[0] = self.edge["horizontal"] < self.player[0] < self.dimensions["height"] - self.edge["horizontal"]
+                if self.notEdge[0]:
+                    slides["display"][0] -= 64*(self.player[2]-1)
+                    slides["character"][0] -= 64*(self.player[2]-1)
+        else:
+            modpos[0] = self.corner["top"]
         screen.blit(self.background,
                     ((((screen_dimensions[0]/2)-32)-((modpos[1]*64)+768))
-                     # The width of the screen, divided by two to get the center of the screen.
-                     #     Then remove 32 (half of the size of a block's sprite) to align blocks with the player.
-                     - (slides["display"][1] / parallax) - (modsize / parallax)
-                     # From that, subtract the following:
-                     # The player's x-position multipled by 64, then subtract 768 (64 times 12, the excess that's
-                     #     rendered outside the level) from that.
-                     if self.large["wide"] else
+                     - ((slides["display"][1]) / parallax) - (modsize / parallax)
+                        if self.large["wide"] else
                      (modpos[1]-768) - (slides["display"][1] / parallax) - (modsize / parallax),
+
                      (((screen_dimensions[1]/2)-32)-((modpos[0]*64)+768))
                      - (slides["display"][0] / parallax) - ((modsize / parallax) * mod)
-                     if self.large["tall"] else
+                        if self.large["tall"] else
                      (modpos[0]-768) - (slides["display"][0] / parallax) - ((modsize / parallax) * mod)))
         for x, row in enumerate(self.data):
             for y, col in enumerate(row):
                 if col in [5, 7]:
-                    crateSlide = slides["crate"] if self.last_crate_moved == [x, y] else [0, 0]
+                    crateslide = slides["crate"] if self.last_crate_moved == [x, y] else [0, 0]
                     screen.blit(resources["sprite"][tiles[col - 4]],
-                                (calc_place(y, self.large["wide"], modpos[1], screen_dimensions[0]) - crateSlide[1]
+                                (calc_place(y, self.large["wide"], modpos[1], screen_dimensions[0]) - crateslide[1]
                                  - (slides["display"][1] / parallax) - (modsize / parallax),
-                                 calc_place(x, self.large["tall"], modpos[0], screen_dimensions[1]) - crateSlide[0]
+                                 calc_place(x, self.large["tall"], modpos[0], screen_dimensions[1]) - crateslide[0]
                                  - (slides["display"][0] / parallax) - ((modsize / parallax) * mod)))
         if self.animation["ticks"] > 100:
             self.animation["ticks"] = 0
@@ -388,8 +391,11 @@ class Level:
                            if int((sum(slides["display"]) + sum(slides["character"])) / 10)\
                            else 0
             screen.blit(resources["sprite"]["player"][self.player[2] + walkingframe],
-                        (((screen_dimensions[0]/2)-32 - (slides["display"][1] / 100)) if self.large["wide"] else
+                        (((screen_dimensions[0]/2)-32 - (slides["display"][1] / 100) + (observpos[1] * 64) - (slides["character"][1]))
+                        if self.large["wide"] else
                          (self.corner["left"] - slides["character"][1] - slides["display"][1] + self.player[1] * 64),
-                         ((screen_dimensions[1]/2)-32 - (slides["display"][0] / 100)) if self.large["tall"] else
+
+                         ((screen_dimensions[1]/2)-32 - (slides["display"][0] / 100) + (observpos[0] * 64) - (slides["character"][0]))
+                        if self.large["tall"] else
                          (self.corner["top"] - slides["display"][0] - slides["character"][0] + self.player[0] * 64)))
         return

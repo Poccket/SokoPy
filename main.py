@@ -48,6 +48,7 @@ resources = {
     },
     "sprite": {
         "shade":        pygame.image.load(load_file(f"data/sprites/shade.png")).convert_alpha(),
+        "shadient":     pygame.image.load(load_file(f"data/sprites/shadient.png")).convert_alpha(),
         "vignette":     pygame.image.load(load_file(f"data/sprites/vignette.png")).convert_alpha(),
         "gbrick":       pygame.image.load(load_file(f"data/sprites/grayFloor.png")).convert_alpha(),
         "ggrass":       pygame.image.load(load_file(f"data/sprites/grassFloor.png")).convert_alpha(),
@@ -134,28 +135,29 @@ frameup = 0
 resUpdated = False
 
 # 0: menu, 1: game
-mode = 0
-newMode = -1
+mode = -1
+newMode = 0
 slides = {
     "display": [0, 0],
     "text": [0, 0],
     "character": [0, 0],
     "crate": [0, 0],
-    "shake": 0
+    "shake": 0,
+    "trans": [0, 0]
 }
-slideDiv = 0
+slideDiv = 1
 charSlideMod = 1
 setupDone = -2
 menuIndex = 0
 lvlIndex = 0
 
 lvlpack_list = lvl.get_levelpacks()
-menu_items = lvl.menu_packs(lvlpack_list)
+menu_items = {"tut": lang.languages[args.lang][4]}
+menu_items.update(lvl.menu_packs(lvlpack_list))
 filedir = "tutorial.lvl"
 erase = ["Erase your save", "Are you sure?", "Save erased"]
 erasing = 0
 menu_items["set"] = "Settings"
-menu_items["tut"] = lang.languages[args.lang][4]
 menu_items["quit"] = lang.languages[args.lang][5]
 menuLevel = "root"
 newMenuLevel = None
@@ -171,19 +173,24 @@ currPos = [-1, -1]
 last_state = [map_content, currPos]
 settings = {
     "shake": {"title": "Screenshake", "value": 10, "range": [0, 20]},
+    "anim":  {"title": "Animated Slides", "value": True, "range": [0, 1]},
+    "slide": {"title": "Slide Speed", "value": 3, "range": [1, 15]},
     "erase": {"title": erase[erasing], "value": None, "range": [None, None]}
 }
 for setting in list(settings.keys()):
     if settings[setting]["value"] is None:
         save.add_savedata('Settings', [setting, None], categorytype="dict")
     elif setsave := save.check_savedata('Settings', setting):
-        if setsave < settings[setting]["range"][0]:
-            settings[setting]["value"] = settings[setting]["range"][0]
-            save.add_savedata('Settings', [setting, settings[setting]["value"]], categorytype="dict")
-        elif setsave > settings[setting]["range"][1]:
-            settings[setting]["value"] = settings[setting]["range"][1]
-            save.add_savedata('Settings', [setting, settings[setting]["value"]], categorytype="dict")
-        else:
+        if isinstance(setsave, int):
+            if setsave < settings[setting]["range"][0]:
+                settings[setting]["value"] = settings[setting]["range"][0]
+                save.add_savedata('Settings', [setting, settings[setting]["value"]], categorytype="dict")
+            elif setsave > settings[setting]["range"][1]:
+                settings[setting]["value"] = settings[setting]["range"][1]
+                save.add_savedata('Settings', [setting, settings[setting]["value"]], categorytype="dict")
+            else:
+                settings[setting]["value"] = setsave
+        elif isinstance(setsave, bool):
             settings[setting]["value"] = setsave
     else:
         save.add_savedata('Settings', [setting, settings[setting]["value"]], categorytype="dict")
@@ -229,6 +236,10 @@ while active:
                     pygame.image.load(load_file(f"data/sprites/shade.png")).convert_alpha()
                 resources["sprite"]["shade"] = \
                     pygame.transform.scale(resources["sprite"]["shade"], (event.w, event.h))
+                resources["sprite"]["shadient"] = \
+                    pygame.image.load(load_file(f"data/sprites/shadient.png")).convert_alpha()
+                resources["sprite"]["shadient"] = \
+                    pygame.transform.scale(resources["sprite"]["shadient"], (event.w, event.h))
                 resUpdated = True
             elif event.type == KEYDOWN and newMode == -1:
                 if event.key == K_BACKSLASH:
@@ -236,15 +247,15 @@ while active:
                 if mode == 0 and setupDone == 0:
                     if event.key == K_RETURN or event.key == K_SPACE:
                         if menuLevel == "root":
-                            if menuIndex < len(menu_items)-3:
+                            if menuIndex == 0:
+                                newMode = 1
+                                filedir = "tutorial.lvl"
+                            elif menuIndex < len(menu_items)-2:
                                 newMenuLevel = list(menu_items.keys())[menuIndex]
-                            elif menuIndex == len(menu_items)-3:
+                            elif menuIndex == len(menu_items)-2:
                                 newMenuLevel = "settings"
                             elif menuIndex == len(menu_items)-1:
                                 active = False
-                            elif menuIndex == len(menu_items)-2:
-                                newMode = 1
-                                filedir = "tutorial.lvl"
                         elif menuLevel == "settings":
                             if menuIndex == len(settings.keys())-1:
                                 if erasing == 1:
@@ -257,10 +268,13 @@ while active:
                             else:
                                 setting = list(settings.keys())[menuIndex]
                                 if settings[setting]["value"] is not None:
-                                    if settings[setting]["value"] >= settings[setting]["range"][1]:
-                                        settings[setting]["value"] = settings[setting]["range"][0]
-                                    else:
-                                        settings[setting]["value"] += 1
+                                    if isinstance(settings[setting]["value"], int):
+                                        if settings[setting]["value"] >= settings[setting]["range"][1]:
+                                            settings[setting]["value"] = settings[setting]["range"][0]
+                                        else:
+                                            settings[setting]["value"] += 1
+                                    # elif isinstance(settings[setting]["value"], bool):
+                                    #    settings[setting]["value"] = not settings[setting]["value"]
                                     save.add_savedata('Settings', [setting, settings[setting]["value"]],
                                                       categorytype="dict")
                         else:
@@ -268,6 +282,7 @@ while active:
                             filedir = menuLevel + '/' + list(lvlpack_list[menuLevel]['lvls'].values())[lvlIndex]
                     elif event.key == K_ESCAPE and menuLevel != "root":
                         newMenuLevel = "root"
+                        slideDiv = 25 / settings["slide"]["value"]
                     elif event.key == K_r:
                         setupDone = -1
                 elif mode == 1 and setupDone == 1:
@@ -275,6 +290,11 @@ while active:
                         newMode = 1
                     elif event.key == K_ESCAPE:
                         newMode = 0
+                    elif event.key == K_RETURN and winState:
+                        if menuLevel != "root" and lvlIndex < len(levelList) - 1:
+                            newMode = 1
+                            lvlIndex += 1
+                            filedir = menuLevel + '/' + list(lvlpack_list[menuLevel]['lvls'].values())[lvlIndex]
                     elif event.key == K_z:
                         if len(map_content.history):
                             map_content.rewind()
@@ -293,7 +313,7 @@ while active:
                         elif menuLevel == "settings":
                             erasing = 0
                             oldMenuIndex = menuIndex
-                            menuIndex = menuIndex + 1 if menuIndex < len(settings)-1 else 0
+                            menuIndex = menuIndex - 1 if menuIndex > 0 else len(settings)-1
                             slides["display"][0] += (oldMenuIndex - menuIndex) * 50
                         else:
                             if lvlIndex >= lvls_can_fit:
@@ -320,10 +340,13 @@ while active:
                         if menuLevel == "settings":
                             setting = list(settings.keys())[menuIndex]
                             if settings[setting]["value"] is not None:
-                                if settings[setting]["value"] >= settings[setting]["range"][1]:
-                                    settings[setting]["value"] = settings[setting]["range"][1]
-                                else:
-                                    settings[setting]["value"] += 1
+                                if isinstance(settings[setting]["value"], int):
+                                    if settings[setting]["value"] >= settings[setting]["range"][1]:
+                                        settings[setting]["value"] = settings[setting]["range"][1]
+                                    else:
+                                        settings[setting]["value"] += 1
+                                elif isinstance(settings[setting]["value"], bool):
+                                    settings[setting]["value"] = not settings[setting]["value"]
                                 save.add_savedata('Settings', [setting, settings[setting]["value"]],
                                                   categorytype="dict")
                         elif menuLevel != "root":
@@ -336,10 +359,13 @@ while active:
                         if menuLevel == "settings":
                             setting = list(settings.keys())[menuIndex]
                             if settings[setting]["value"] is not None:
-                                if settings[setting]["value"] <= settings[setting]["range"][0]:
-                                    settings[setting]["value"] = settings[setting]["range"][0]
-                                else:
-                                    settings[setting]["value"] -= 1
+                                if isinstance(settings[setting]["value"], int):
+                                    if settings[setting]["value"] <= settings[setting]["range"][0]:
+                                        settings[setting]["value"] = settings[setting]["range"][0]
+                                    else:
+                                        settings[setting]["value"] -= 1
+                                elif isinstance(settings[setting]["value"], bool):
+                                    settings[setting]["value"] = not settings[setting]["value"]
                                 save.add_savedata('Settings', [setting, settings[setting]["value"]],
                                                   categorytype="dict")
                         elif menuLevel != "root":
@@ -369,7 +395,11 @@ while active:
         if newMode != -1:
             if slides["display"][0] < 2000:
                 slides["display"][0] += max(1+abs(slides["display"][0]/10), 1)
+                slides["text"][0] += max(1+abs(slides["text"][0]/8), 1)
             else:
+                res = pygame.display.Info()
+                res = [res.current_w, res.current_h]
+                slides["trans"] = [0, res[0] * 2]
                 mode = newMode
                 newMode = -1
                 setupDone = -1
@@ -387,10 +417,10 @@ while active:
                 if vector == "shake":
                     if slides["shake"]:
                         slides["shake"] -= 1
-                        slides["display"][0] += randint(round(-(settings["shake"]["value"]*10) * (slides["shake"] / 10)),
-                                                        round((settings["shake"]["value"]*10) * (slides["shake"] / 10)))
-                        slides["display"][1] += randint(round(-(settings["shake"]["value"]*10) * (slides["shake"] / 10)),
-                                                        round((settings["shake"]["value"]*10) * (slides["shake"] / 10)))
+                        slides["display"][0] += randint(round(-(settings["shake"]["value"]*10)*(slides["shake"] / 10)),
+                                                        round((settings["shake"]["value"]*10)*(slides["shake"] / 10)))
+                        slides["display"][1] += randint(round(-(settings["shake"]["value"]*10)*(slides["shake"] / 10)),
+                                                        round((settings["shake"]["value"]*10)*(slides["shake"] / 10)))
                     continue
                 if slides[vector][0] < 0:
                     slides[vector][0] = min(slides[vector][0] - (slides[vector][0] / slideDiv), -0.04)
@@ -426,7 +456,7 @@ while active:
             charSlideMod = 100
             slides["character"][0] = 3000
             modPos = [0, 0]
-            slideDiv = 5
+            slideDiv = 25 / settings["slide"]["value"]
             winState = False
             winText = True
             lastMoved = [-1, -1]
@@ -437,9 +467,10 @@ while active:
             if newMode != -1:
                 charSlideMod = 1
             else:
-                winState = map_content.check_win()
+                targets_left = map_content.check_win()
+                winState = targets_left == 0
                 if winState and winText:
-                    slides["text"][1] = -2000
+                    slides["text"][0] = -2000
                     winText = False
                 if 0 < slides["crate"][0] < 0.2 and 0 < slides["crate"][1] < 0.2:
                     lastMoved = [-1, -1]
@@ -447,15 +478,25 @@ while active:
                     lastMoved = [-1, -1]
         map_content.render(res, slides, screen, resources, tiles, dt)
         if winState:
+            winShade = pygame.surface.Surface((res[0], res[1] * 3), pygame.SRCALPHA, 32)
+            winShade = winShade.convert_alpha()
+            winShade.blit(resources["sprite"]["shade"], (0, 0))
+            winShade.blit(resources["sprite"]["shadient"], (0, res[1]))
+            screen.blit(winShade, (0, 0-(abs(slides["text"][0]*2) if newMode == -1 else 0)))
+            nextLevelLine = False
             if menuLevel != "root":
-                levelTitle = menuLevel + '/' + list(lvlpack_list[menuLevel]['lvls'].values())[lvlIndex]
+                levelList = list(lvlpack_list[menuLevel]['lvls'].values())
+                levelTitle = menuLevel + '/' + levelList[lvlIndex]
                 save.add_savedata('Completed', [levelTitle])
+                if lvlIndex < len(levelList) - 1:
+                    nextLevelLine = True
+                    draw_text("Arial", "Press RETURN to play the next level", (192, 192, 255),
+                              ((res[0] / 2) - slides["text"][1], (res[1] / 2) - slides["text"][0]), center=True,
+                              shadow=True)
             draw_text("BigArial", "You Won!", (192, 192, 255),
-                      ((res[0]/2)-slides["text"][0], ((res[1]/2)-80)-slides["text"][1]), center=True, shadow=True)
-            draw_text("Arial", "Press R to restart or", (192, 192, 255),
-                      ((res[0]/2)-slides["text"][0], (res[1]/2)-slides["text"][1]), center=True, shadow=True)
-            draw_text("Arial", "Press ESC to leave", (192, 192, 255),
-                      ((res[0]/2)-slides["text"][0], ((res[1]/2)+50)-slides["text"][1]), center=True, shadow=True)
+                      ((res[0]/2)-slides["text"][1], ((res[1]/2)-80)-slides["text"][0]), center=True, shadow=True)
+            draw_text("Arial", "Press R to restart, Press ESC to leave", (192, 192, 255), ((res[0]/2)-slides["text"][1],
+                      ((res[1]/2)+(50*nextLevelLine))-slides["text"][0]), center=True, shadow=True)
     elif mode == 0:
         if setupDone != 0:
             res = pygame.display.Info()
@@ -463,12 +504,12 @@ while active:
             setupDone = 0
             newMenuLevel = None
             walking = False
-            menuBackLevelPack = choice(list(menu_items.keys())[:-3])
+            menuBackLevelPack = choice(list(menu_items.keys())[1:-3])
             menuBackLevel = choice(list(lvlpack_list[menuBackLevelPack]['lvls'].values()))
             debug_info["lvl"] = f"data/levels/{menuBackLevelPack}/{menuBackLevel}"
             map_content = lvl.Level(f"data/levels/{menuBackLevelPack}/{menuBackLevel}", res)
             parallaxMulti = 2
-            slideDiv = 7
+            slideDiv = 25 / settings["slide"]["value"]
         elif resUpdated:
             res = pygame.display.Info()
             res = [res.current_w, res.current_h]
@@ -479,13 +520,26 @@ while active:
             menuMax = len(menu_items)-1
             map_content.render(res, slides, screen, resources, tiles, dt, mod=menuIndex, parallax=3, player=False, modsize=50)
             screen.blit(resources["sprite"]["shade"], (0, 0))
+            biggestItem = 0
             for i, item in enumerate(menu_items.values()):
-                draw_text("Arial", item,
-                          (192, 192, 255) if i == menuIndex else (128, 128, 196),
-                          (50-slides["display"][1], 240+((50*(i-menuIndex))-slides["display"][0])), shadow=True)
+                itemSize = draw_text("Arial", item[:item.index("(")] if "(" in item else item,
+                                     (192, 192, 255) if i == menuIndex else (128, 128, 196),
+                                     ((50-slides["display"][1])+(slides["trans"][1]*(i+1)/2),
+                                      240+((50*(i-menuIndex))-slides["display"][0])),
+                                     shadow=True)
+                if itemSize > biggestItem:
+                    biggestItem = itemSize
+            for i, item in enumerate(menu_items.values()):
+                if "(" in item:
+                    draw_text("Arial", item[item.index("("):],
+                              (192, 192, 255) if i == menuIndex else (96, 96, 128),
+                              ((biggestItem+100-slides["display"][1])+(slides["trans"][1]*(i+1)/2),
+                               240+((50*(i-menuIndex))-slides["display"][0])),
+                              shadow=True, center=False)
             titleWidth = draw_text("BigArial", lang.languages[args.lang][0], (192, 192, 255),
                                    (20-slides["display"][1], 90+((50*(-menuIndex))-slides["display"][0])), shadow=True)
-            screen.blit(resources["sprite"]["player"][2], (128-slides["display"][1], 90+((50*(-menuIndex))-slides["display"][0])))
+            screen.blit(resources["sprite"]["player"][2], (128-slides["display"][1],
+                                                           90+((50*(-menuIndex))-slides["display"][0])))
             draw_text("Arial", lang.languages[args.lang][16], (128, 128, 196),
                       (45+titleWidth-slides["display"][1], 120+((50*(-menuIndex))-slides["display"][0])), shadow=True)
             draw_text("Arial", lang.languages[args.lang][2], (128, 128, 196),
@@ -493,19 +547,25 @@ while active:
         elif menuLevel == "settings":
             lvlIndex = 0
             menuMax = len(menu_items)-1
-            map_content.render(res, slides, screen, resources, tiles, dt, mod=menuIndex, parallax=3, player=False, modsize=50)
+            map_content.render(res, slides, screen, resources, tiles, dt,
+                               mod=menuIndex, parallax=3, player=False, modsize=50)
             screen.blit(resources["sprite"]["shade"], (0, 0))
             for i, item in enumerate(settings.values()):
                 draw_text("Arial", item["title"],
                           (192, 192, 255) if i == menuIndex else (128, 128, 196),
                           (50-slides["display"][1], 240+((50*(i-menuIndex))-slides["display"][0])), shadow=True)
                 if item["value"] is not None:
-                    draw_text("Arial", str(item["value"]),
+                    if item["range"] == [0, 1]:
+                        settingVal = ["No", "Yes"][item["value"]]
+                    else:
+                        settingVal = item["value"]
+                    draw_text("Arial", str(settingVal),
                               (192, 192, 255) if i == menuIndex else (128, 128, 196),
                               (500-slides["display"][1], 240+((50*(i-menuIndex))-slides["display"][0])), shadow=True)
             titleWidth = draw_text("BigArial", lang.languages[args.lang][0], (192, 192, 255),
                                    (20-slides["display"][1], 90+((50*(-menuIndex))-slides["display"][0])), shadow=True)
-            screen.blit(resources["sprite"]["player"][2], (128-slides["display"][1], 90+((50*(-menuIndex))-slides["display"][0])))
+            screen.blit(resources["sprite"]["player"][2], (128-slides["display"][1],
+                                                           90+((50*(-menuIndex))-slides["display"][0])))
             draw_text("Arial", lang.languages[args.lang][16], (128, 128, 196),
                       (45+titleWidth-slides["display"][1], 120+((50*(-menuIndex))-slides["display"][0])), shadow=True)
             draw_text("Arial", lang.languages[args.lang][2], (128, 128, 196),
