@@ -227,7 +227,7 @@ class Level:
             slides["shake"] = 3
 
     def render(self, screen_dimensions: list[int], slides: dict, screen, resources, tiles,
-               dt, mod=0, parallax=1, player=True, modsize=0):  # TODO: Too many goddamn variables
+               dt, mod=0, modw=0, parallax=1, player=True, modsize=0):  # TODO: Too many goddamn variables
         if not self.background:
             if not self.inside:
                 self.inside = []
@@ -364,9 +364,9 @@ class Level:
             modpos[0] = self.corner["top"]
         screen.blit(self.background,
                     ((((screen_dimensions[0]/2)-32)-((modpos[1]*64)+768))
-                     - ((slides["display"][1]) / parallax) - (modsize / parallax)
+                     - ((slides["display"][1]) / parallax) - ((modsize / parallax) * modw)
                         if self.large["wide"] else
-                     (modpos[1]-768) - (slides["display"][1] / parallax) - (modsize / parallax),
+                     (modpos[1]-768) - (slides["display"][1] / parallax) - ((modsize / parallax) * modw),
 
                      (((screen_dimensions[1]/2)-32)-((modpos[0]*64)+768))
                      - (slides["display"][0] / parallax) - ((modsize / parallax) * mod)
@@ -378,7 +378,7 @@ class Level:
                     crateslide = slides["crate"] if self.last_crate_moved == [x, y] else [0, 0]
                     screen.blit(resources["sprite"][tiles[col - 4]],
                                 (calc_place(y, self.large["wide"], modpos[1], screen_dimensions[0]) - crateslide[1]
-                                 - (slides["display"][1] / parallax) - (modsize / parallax),
+                                 - (slides["display"][1] / parallax) - ((modsize / parallax) * modw),
                                  calc_place(x, self.large["tall"], modpos[0], screen_dimensions[1]) - crateslide[0]
                                  - (slides["display"][0] / parallax) - ((modsize / parallax) * mod)))
         if self.animation["ticks"] > 100:
