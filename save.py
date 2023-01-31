@@ -1,35 +1,40 @@
 import os
 import json
+import lzma
+
+
+savefile = "sokopy.save"
 
 
 def commit_save(savedata: dict) -> None:
     """
-    Writes passed savedata to file 'save.json' in working directory.
+    Writes passed savedata to the savefile in working directory.
     """
     # Sort anything sort-able just for my sanity when debugging savefiles
     for i in list(savedata.keys()):
         if isinstance((savedata[i]), list):
             savedata[i].sort()
-    with open('save.json', 'w', encoding='utf-8') as f:
-        json.dump(savedata, f, ensure_ascii=False, indent=4)
+    json_vers = json.dumps(savedata, ensure_ascii=False, indent=4)
+    with lzma.open(savefile, 'wb') as f:
+        f.write(json_vers.encode())
     return
 
 
 def get_save() -> dict:
     """
-    Reads file 'save.json' in working directory to a dictionary,
+    Reads the savefile in working directory to a dictionary,
     then returns the dictionary.
     """
-    with open('save.json') as json_file:
-        return json.load(json_file)
+    with lzma.open(savefile, 'rb') as f:
+        return json.loads(f.read().decode())
 
 
 def init_save() -> bool:
     """
-    Checks if 'save.json' exists in working directory,
+    Checks if savefile exists in working directory,
     and if not, creates it with default settings.
     """
-    if os.path.exists('save.json'):
+    if os.path.exists(savefile):
         return True
     else:
         commit_save({"Completed": [], "Settings": {}})
