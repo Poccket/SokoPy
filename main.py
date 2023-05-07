@@ -560,7 +560,7 @@ while active:
             newMenuLevel = None
             walking = False
             menuBackLevelPack = choice(list(menu_items.keys())[1:-3])
-            menuBackLevel = randint(1, lvlpack_list[menuBackLevelPack]['len'])
+            menuBackLevel = randint(0, lvlpack_list[menuBackLevelPack]['len']-1)
             debug_info["lvl"] = f"data/levels/{menuBackLevelPack}#{menuBackLevel}"
             levelset = convert.LevelSet(f"data/levels/{menuBackLevelPack}")
             map_content = lvl.Level(levelset.get_level(menuBackLevel), res)
@@ -576,10 +576,10 @@ while active:
             newLvlTimer = round(newLvlTimer)
             if newLvlTimer > 150000:
                 menuBackLevelPack = choice(list(menu_items.keys())[1:-3])
-                menuBackLevel = randint(1, lvlpack_list[menuBackLevelPack]['len'])
+                menuBackLevel = randint(0, lvlpack_list[menuBackLevelPack]['len']-1)
                 debug_info["lvl"] = f"data/levels/{menuBackLevelPack}#{menuBackLevel}"
                 levelset = convert.LevelSet(f"data/levels/{menuBackLevelPack}")
-                map_content = lvl.Level(temp_levelset.get_level(menuBackLevel), res)
+                map_content = lvl.Level(levelset.get_level(menuBackLevel), res)
                 newLvlTimer = -150000
                 lvlDirW = randint(-1, 1)
                 lvlDirH = randint(-1, 1)
