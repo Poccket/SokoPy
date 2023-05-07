@@ -5,6 +5,7 @@ from random import randint, seed
 from copy import deepcopy
 from pygame import surface
 import pygame
+import convert
 
 # blocks:
 # new line      , empty space  , walkable  , player
@@ -29,6 +30,7 @@ atrTable = ["00", "00", "10", "10",
             "00", "00", "00", "00", ]
 
 
+# We offloaded this to the convert script but I'd like to leave it here just in case
 def decode_lvl(filename: str):  # , slides["display"]: int = 4): <-- What did this do?
     with open(filename, mode='rb') as f:
         f_content = f.read()
@@ -52,12 +54,19 @@ def decode_lvl(filename: str):  # , slides["display"]: int = 4): <-- What did th
 
 def get_levelpacks():
     levelpack_list = {}
-    for dirpath, dirnames, files in os.walk(os.path.abspath(os.curdir + "/data/levels/")):
-        if "metadata.json" in files:
-            with open(dirpath + "/metadata.json", mode='r') as f:
-                f_content = f.read()
-            meta = json.loads(f_content)
-            levelpack_list[os.path.basename(os.path.normpath(dirpath))] = meta['levelpack']
+    for filename in os.listdir("./data/levels/"):
+        if filename == "tutorial.lvl":
+            continue
+        f = os.path.join("./data/levels/", filename)
+        if os.path.isfile(f):
+            if meta := convert.unpack_levelset(f):
+                levelpack_list[filename] = {"title": meta['title'], "desc": meta['desc'], "len": meta['length']}
+    #for dirpath, dirnames, files in os.walk(os.path.abspath(os.curdir + "/data/levels/")):
+    #    if "metadata.json" in files:
+    #        with open(dirpath + "/metadata.json", mode='r') as f:
+    #            f_content = f.read()
+    #        meta = json.loads(f_content)
+    #        levelpack_list[os.path.basename(os.path.normpath(dirpath))] = meta['levelpack']
     return levelpack_list
 
 
@@ -98,8 +107,8 @@ def calc_place(modifier, large, modpos, resolution):
 
 
 class Level:
-    def __init__(self, level: str, screen_dimensions: list[int]):
-        self.data = decode_lvl(level)
+    def __init__(self, level, screen_dimensions: list[int]):
+        self.data = level
         self.precalculated_connections = pre_calc_connections(self.data)
         self.dimensions = {
             "height": len(self.data) - 1,

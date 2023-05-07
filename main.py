@@ -1,41 +1,36 @@
-# Default imports
+# -- Default imports
 import argparse
 import time
-# Limited default imports
+# -- Limited default imports
 from contextlib import redirect_stdout
 from random import randint, seed, choice
-# 3rd party imports
+# -- 3rd party imports
 with redirect_stdout(None):  # This stops pygame from printing the stupid import message
     import pygame
 from pygame.locals import (
     K_SPACE, K_ESCAPE, K_RETURN, KEYDOWN, MOUSEBUTTONDOWN,
     K_BACKSLASH, K_BACKSPACE, K_UP, K_DOWN, K_LEFT, K_RIGHT, K_r, K_z
 )
-# Local imports
+# -- Local imports
 import lang
 import save
 import level as lvl
+import convert
 
 
+# -- Parser startup
 parser = argparse.ArgumentParser(description="SokoPy - A Python-based Sokoban Clone")
 parser.add_argument('-l', '--lang', help="Picks language (from lang.py)", type=str, default="EN-US")
-parser.add_argument('-L', '--level', help="Loads directly into the specified level (This doesn't work yet!)",
-                    type=str, default="")
+# FIXME: parser.add_argument('-L', '--level', help="Loads directly into the specified level", type=str, default="")
 args = parser.parse_args()
 
 if args.lang not in lang.languages:
     raise ValueError(f"Language selected ({args.lang}) is not present")
 
+
+# -- Initialization
 saves = save.init_save(False)
 username = saves[0]
-
-
-def load_file(file_name):
-    # return os.path.join(os.path.dirname('./'), file_name)
-    return file_name
-
-
-# Initialization
 pygame.init()
 pygame.display.set_caption('SokoPy')
 screen = pygame.display.set_mode([960, 960], pygame.RESIZABLE)
@@ -48,48 +43,47 @@ resources = {
         "BigArial": pygame.font.SysFont("Arial", 64, bold=True),
     },
     "sprite": {
-        "shade":        pygame.image.load(load_file(f"data/sprites/shade.png")).convert_alpha(),
-        "shadient":     pygame.image.load(load_file(f"data/sprites/shadient.png")).convert_alpha(),
-        "vignette":     pygame.image.load(load_file(f"data/sprites/vignette.png")).convert_alpha(),
-        "gbrick":       pygame.image.load(load_file(f"data/sprites/grayFloor.png")).convert_alpha(),
-        "ggrass":       pygame.image.load(load_file(f"data/sprites/grassFloor.png")).convert_alpha(),
-        "rbrick":       pygame.image.load(load_file(f"data/sprites/redBrick.png")).convert_alpha(),
-        "rbricksheet":  pygame.image.load(load_file(f"data/sprites/redBrickSheet.png")).convert_alpha(),
-        "crate":        pygame.image.load(load_file(f"data/sprites/crateBrown.png")).convert_alpha(),
-        "cratedark":    pygame.image.load(load_file(f"data/sprites/crateBrownOnTarget.png")).convert_alpha(),
-        "target":       pygame.image.load(load_file(f"data/sprites/target.png")).convert_alpha(),
+        "shade":        pygame.image.load(f"data/sprites/shade.png").convert_alpha(),
+        "shadient":     pygame.image.load(f"data/sprites/shadient.png").convert_alpha(),
+        "vignette":     pygame.image.load(f"data/sprites/vignette.png").convert_alpha(),
+        "gbrick":       pygame.image.load(f"data/sprites/grayFloor.png").convert_alpha(),
+        "ggrass":       pygame.image.load(f"data/sprites/grassFloor.png").convert_alpha(),
+        "rbrick":       pygame.image.load(f"data/sprites/redBrick.png").convert_alpha(),
+        "rbricksheet":  pygame.image.load(f"data/sprites/redBrickSheet.png").convert_alpha(),
+        "crate":        pygame.image.load(f"data/sprites/crateBrown.png").convert_alpha(),
+        "cratedark":    pygame.image.load(f"data/sprites/crateBrownOnTarget.png").convert_alpha(),
+        "target":       pygame.image.load(f"data/sprites/target.png").convert_alpha(),
         # TODO: Spritesheet-ify the player please!
-        "player":      [pygame.image.load(load_file(f"data/sprites/playerStill0.png")).convert_alpha(),
-                        pygame.image.load(load_file(f"data/sprites/playerStill1.png")).convert_alpha(),
-                        pygame.image.load(load_file(f"data/sprites/playerStill2.png")).convert_alpha(),
-                        pygame.image.load(load_file(f"data/sprites/playerStill3.png")).convert_alpha(),
-                        pygame.image.load(load_file(f"data/sprites/playerWalk00.png")).convert_alpha(),
-                        pygame.image.load(load_file(f"data/sprites/playerWalk10.png")).convert_alpha(),
-                        pygame.image.load(load_file(f"data/sprites/playerWalk20.png")).convert_alpha(),
-                        pygame.image.load(load_file(f"data/sprites/playerWalk30.png")).convert_alpha(),
-                        pygame.image.load(load_file(f"data/sprites/playerWalk01.png")).convert_alpha(),
-                        pygame.image.load(load_file(f"data/sprites/playerWalk11.png")).convert_alpha(),
-                        pygame.image.load(load_file(f"data/sprites/playerWalk21.png")).convert_alpha(),
-                        pygame.image.load(load_file(f"data/sprites/playerWalk31.png")).convert_alpha()],
-        "lvlbutton":    pygame.image.load(load_file(f"data/sprites/levelbutton.png")).convert_alpha(),
-        "selbutton":    pygame.image.load(load_file(f"data/sprites/selectedbutton.png")).convert_alpha(),
-        "lvlcheck":     pygame.image.load(load_file(f"data/sprites/checkbox.png")).convert_alpha(),
-        "lvlchecked":   pygame.image.load(load_file(f"data/sprites/checkedbox.png")).convert_alpha(),
+        "player":      [
+                            pygame.image.load(f"data/sprites/playerStill0.png").convert_alpha(),
+                            pygame.image.load(f"data/sprites/playerStill1.png").convert_alpha(),
+                            pygame.image.load(f"data/sprites/playerStill2.png").convert_alpha(),
+                            pygame.image.load(f"data/sprites/playerStill3.png").convert_alpha(),
+                            pygame.image.load(f"data/sprites/playerWalk00.png").convert_alpha(),
+                            pygame.image.load(f"data/sprites/playerWalk10.png").convert_alpha(),
+                            pygame.image.load(f"data/sprites/playerWalk20.png").convert_alpha(),
+                            pygame.image.load(f"data/sprites/playerWalk30.png").convert_alpha(),
+                            pygame.image.load(f"data/sprites/playerWalk01.png").convert_alpha(),
+                            pygame.image.load(f"data/sprites/playerWalk11.png").convert_alpha(),
+                            pygame.image.load(f"data/sprites/playerWalk21.png").convert_alpha(),
+                            pygame.image.load(f"data/sprites/playerWalk31.png").convert_alpha()
+                        ],
+        "lvlbutton":    pygame.image.load(f"data/sprites/levelbutton.png").convert_alpha(),
+        "selbutton":    pygame.image.load(f"data/sprites/selectedbutton.png").convert_alpha(),
+        "lvlcheck":     pygame.image.load(f"data/sprites/checkbox.png").convert_alpha(),
+        "lvlchecked":   pygame.image.load(f"data/sprites/checkedbox.png").convert_alpha(),
     },
     "sound": {
-
     },
 }
 
 resources["sprite"]["vignette"] = pygame.transform.scale(resources["sprite"]["vignette"], (960, 960))
-
 tiles = ["rbrick", "crate", "target", "cratedark"]
 
 debug_info = {
     "fps": 0
 }
-import base64
-debug = False
+showDebugInfo = False
 
 
 def debug_show():
@@ -156,7 +150,7 @@ lvlIndex = 0
 lvlpack_list = lvl.get_levelpacks()
 menu_items = {"tut": lang.languages[args.lang][4]}
 menu_items.update(lvl.menu_packs(lvlpack_list))
-filedir = "tutorial.lvl"
+filedir = "tutorial.lvl#0"
 erase = ["Erase your save", "Are you sure?", "Save erased"]
 erasing = 0
 menu_items["set"] = "Settings"
@@ -176,10 +170,12 @@ last_state = [map_content, currPos]
 def load_settings():
     settings = {
         "prof":  {"title": "Profile", "value": username.capitalize(), "range": 'str'},
+        "vinet":  {"title": "Vignette", "value": True, "range": [0, 1]},
         "shake": {"title": "Screenshake", "value": 10, "range": [0, 20]},
         "anim":  {"title": "Animated Slides", "value": True, "range": [0, 1]},
-        "slide": {"title": "Slide Speed", "value": 3, "range": [1, 15]},
-        "erase": {"title": erase[erasing], "value": None, "range": [None, None]}
+        "slide": {"title": "Slide Speed", "value": 1, "range": [1, 4]},
+#        "frame":  {"title": "Framerate", "value": 30, "range": [30, 200]},
+        "erase": {"title": erase[erasing], "value": None, "range": [None, None]},
     }
     for setting in list(settings.keys()):
         if setting == "prof":
@@ -206,7 +202,7 @@ def load_settings():
 settings = load_settings()
 
 
-def can_press(key):
+def can_press(key, dt):
     global kcd, kLast, kHoldDiv, kRepeatRate
     if kcd < 1 or kLast != key:
         if kLast == key:
@@ -214,7 +210,7 @@ def can_press(key):
         else:
             kHoldDiv = 1 if mode == 0 else 1.5
         kLast = key
-        kcd = round(kRepeatRate/kHoldDiv)
+        kcd = round(kRepeatRate/(kHoldDiv*(dt/15)))
         return True
     return False
 
@@ -223,7 +219,7 @@ if len(saves) > 1:
     menuLevel = "savePicker"
 while active:
     if focused:
-        dt = clock.tick(60)
+        dt = clock.tick(60) #settings["frame"]["value"])
         seed(time.time())
         settings["erase"]["title"] = erase[erasing]
         kcd -= 1
@@ -241,21 +237,21 @@ while active:
                 continue
             if event.type == pygame.VIDEORESIZE:
                 resources["sprite"]["vignette"] = \
-                    pygame.image.load(load_file(f"data/sprites/vignette.png")).convert_alpha()
+                    pygame.image.load(f"data/sprites/vignette.png").convert_alpha()
                 resources["sprite"]["vignette"] = \
                     pygame.transform.scale(resources["sprite"]["vignette"], (event.w, event.h))
                 resources["sprite"]["shade"] = \
-                    pygame.image.load(load_file(f"data/sprites/shade.png")).convert_alpha()
+                    pygame.image.load(f"data/sprites/shade.png").convert_alpha()
                 resources["sprite"]["shade"] = \
                     pygame.transform.scale(resources["sprite"]["shade"], (event.w, event.h))
                 resources["sprite"]["shadient"] = \
-                    pygame.image.load(load_file(f"data/sprites/shadient.png")).convert_alpha()
+                    pygame.image.load(f"data/sprites/shadient.png").convert_alpha()
                 resources["sprite"]["shadient"] = \
                     pygame.transform.scale(resources["sprite"]["shadient"], (event.w, event.h))
                 resUpdated = True
             elif event.type == KEYDOWN and newMode == -1:
                 if event.key == K_BACKSLASH:
-                    debug = not debug
+                    showDebugInfo = not showDebugInfo
                 if mode == 0 and setupDone == 0:
                     if typing:
                         if event.key == K_BACKSPACE:
@@ -267,7 +263,7 @@ while active:
                         if menuLevel == "root":
                             if menuIndex == 0:
                                 newMode = 1
-                                filedir = "tutorial.lvl"
+                                filedir = "tutorial.lvl#0"
                             elif menuIndex < len(menu_items)-2:
                                 newMenuLevel = list(menu_items.keys())[menuIndex]
                             elif menuIndex == len(menu_items)-2:
@@ -301,18 +297,16 @@ while active:
                                             settings[setting]["value"] = settings[setting]["range"][0]
                                         else:
                                             settings[setting]["value"] += 1
-                                    # elif isinstance(settings[setting]["value"], bool):
-                                    #    settings[setting]["value"] = not settings[setting]["value"]
                                     save.add_savedata('Settings', [setting, settings[setting]["value"]],
                                                       username, categorytype="dict")
                         else:
                             newMode = 1
-                            filedir = menuLevel + '/' + list(lvlpack_list[menuLevel]['lvls'].values())[lvlIndex]
+                            filedir = menuLevel + '#' + str(lvlIndex)
                     elif event.key == K_ESCAPE and menuLevel != "root":
                         if typing:
                             typing = False
                         newMenuLevel = "root"
-                        slideDiv = 25 / settings["slide"]["value"]
+                        slideDiv = 25 / (settings["slide"]["value"]*2)
                     elif not typing and event.key == K_r:
                         if typing:
                             typing = False
@@ -326,7 +320,7 @@ while active:
                         if menuLevel != "root" and lvlIndex < len(levelList) - 1:
                             newMode = 1
                             lvlIndex += 1
-                            filedir = menuLevel + '/' + list(lvlpack_list[menuLevel]['lvls'].values())[lvlIndex]
+                            filedir = menuLevel + '#' + str(lvlIndex)
                     elif event.key == K_z:
                         if len(map_content.history):
                             map_content.rewind()
@@ -336,25 +330,25 @@ while active:
         if newMode == -1:
             if mode == 0:
                 if keys[K_UP]:
-                    if can_press(K_UP):
+                    if can_press(K_UP, dt):
                         if menuLevel in ["root", "savePicker"]:
                             erasing = 0
                             oldMenuIndex = menuIndex
                             menuIndex = menuIndex-1 if menuIndex > 0 else menuMax
-                            slides["display"][0] += (oldMenuIndex-menuIndex)*50
+                            slides["display"][0] += ((oldMenuIndex-menuIndex)*50)
                         elif menuLevel == "settings":
                             if typing:
                                 typing = False
                             erasing = 0
                             oldMenuIndex = menuIndex
                             menuIndex = menuIndex - 1 if menuIndex > 0 else len(settings)-1
-                            slides["display"][0] += (oldMenuIndex - menuIndex) * 50
+                            slides["display"][0] += ((oldMenuIndex - menuIndex) * 50)
                         else:
                             if lvlIndex >= lvls_can_fit:
                                 lvlIndex -= lvls_can_fit
                                 slides["display"][0] += 160
                 elif keys[K_DOWN]:
-                    if can_press(K_DOWN):
+                    if can_press(K_DOWN, dt):
                         if menuLevel in ["root", "savePicker"]:
                             erasing = 0
                             oldMenuIndex = menuIndex
@@ -372,7 +366,7 @@ while active:
                                 lvlIndex += lvls_can_fit
                                 slides["display"][0] -= 160
                 elif keys[K_RIGHT]:
-                    if can_press(K_RIGHT):
+                    if can_press(K_RIGHT, dt):
                         if menuLevel == "settings":
                             if typing:
                                 typing = False
@@ -400,7 +394,7 @@ while active:
                                 if lvlIndex % lvls_can_fit == 0:
                                     slides["display"][0] -= 160
                 elif keys[K_LEFT]:
-                    if can_press(K_LEFT):
+                    if can_press(K_LEFT, dt):
                         if menuLevel == "settings":
                             if typing:
                                 typing = False
@@ -429,16 +423,16 @@ while active:
                     kLast = None
             if mode == 1:
                 if keys[K_UP]:
-                    if can_press(K_UP):
+                    if can_press(K_UP, dt):
                         map_content.move_player([-1, 0], slides)
                 elif keys[K_DOWN]:
-                    if can_press(K_DOWN):
+                    if can_press(K_DOWN, dt):
                         map_content.move_player([1, 0], slides)
                 elif keys[K_LEFT]:
-                    if can_press(K_LEFT):
+                    if can_press(K_LEFT, dt):
                         map_content.move_player([0, -1], slides)
                 elif keys[K_RIGHT]:
-                    if can_press(K_RIGHT):
+                    if can_press(K_RIGHT, dt):
                         map_content.move_player([0, 1], slides)
                 else:
                     kHoldDiv = 1
@@ -450,8 +444,8 @@ while active:
             settings = load_settings()
         if newMode != -1:
             if slides["display"][0] < 2000:
-                slides["display"][0] += max(1+abs(slides["display"][0]/10), 1)
-                slides["text"][0] += max(1+abs(slides["text"][0]/8), 1)
+                slides["display"][0] += max(1+abs(slides["display"][0]/10), 1)*(dt/10)
+                slides["text"][0] += max(1+abs(slides["text"][0]/8), 1)*(dt/10)
             else:
                 res = pygame.display.Info()
                 res = [res.current_w, res.current_h]
@@ -462,7 +456,7 @@ while active:
                 slides["display"][0] = -2000
         elif newMenuLevel:
             if slides["display"][0] < 20000:
-                slides["display"][0] += max(1+abs(slides["display"][0]/10), 1)
+                slides["display"][0] += max(1+abs(slides["display"][0]/10), 1)*(dt/10)
             else:
                 menuLevel = newMenuLevel
                 newMenuLevel = None
@@ -479,13 +473,13 @@ while active:
                                                         round((settings["shake"]["value"]*10)*(slides["shake"] / 10)))
                     continue
                 if slides[vector][0] < 0:
-                    slides[vector][0] = min(slides[vector][0] - (slides[vector][0] / slideDiv), -0.04)
+                    slides[vector][0] = min(slides[vector][0] - (slides[vector][0] / (slideDiv*(dt/20))), -0.04)
                 elif slides[vector][0]:
-                    slides[vector][0] = max(slides[vector][0] - (slides[vector][0] / slideDiv), 0.04)
+                    slides[vector][0] = max(slides[vector][0] - (slides[vector][0] / (slideDiv*(dt/20))), 0.04)
                 if slides[vector][1] < 0:
-                    slides[vector][1] = min(slides[vector][1] - (slides[vector][1] / slideDiv), -0.04)
+                    slides[vector][1] = min(slides[vector][1] - (slides[vector][1] / (slideDiv*(dt/20))), -0.04)
                 elif slides[vector][1]:
-                    slides[vector][1] = max(slides[vector][1] - (slides[vector][1] / slideDiv), 0.04)
+                    slides[vector][1] = max(slides[vector][1] - (slides[vector][1] / (slideDiv*(dt/20))), 0.04)
                 slides[vector][0] = round(slides[vector][0], 1)
                 slides[vector][1] = round(slides[vector][1], 1)
     else:
@@ -507,12 +501,13 @@ while active:
         if setupDone != 1:
             last_state = []
             debug_info["lvl"] = f"data/levels/{filedir}"
-            map_content = lvl.Level(f"data/levels/{filedir}", res)
+            levelset = convert.LevelSet(f"data/levels/{filedir[:filedir.index('#')]}")
+            map_content = lvl.Level(levelset.get_level(int(filedir[filedir.index('#')+1:])), res)
             setupDone = 1
             charSlideMod = 100
             slides["character"][0] = 3000
             modPos = [0, 0]
-            slideDiv = 25 / settings["slide"]["value"]
+            slideDiv = 25 / (settings["slide"]["value"]*2)
             winState = False
             winText = True
             lastMoved = [-1, -1]
@@ -541,8 +536,8 @@ while active:
             screen.blit(winShade, (0, 0-(abs(slides["text"][0]*2) if newMode == -1 else 0)))
             nextLevelLine = False
             if menuLevel != "root":
-                levelList = list(lvlpack_list[menuLevel]['lvls'].values())
-                levelTitle = menuLevel + '/' + levelList[lvlIndex]
+                levelList = list(range(lvlpack_list[menuLevel]['len']+1))
+                levelTitle = menuLevel + '#' + str(levelList[lvlIndex])
                 save.add_savedata('Completed', [levelTitle], username)
                 if lvlIndex < len(levelList) - 1:
                     nextLevelLine = True
@@ -565,11 +560,12 @@ while active:
             newMenuLevel = None
             walking = False
             menuBackLevelPack = choice(list(menu_items.keys())[1:-3])
-            menuBackLevel = choice(list(lvlpack_list[menuBackLevelPack]['lvls'].values()))
-            debug_info["lvl"] = f"data/levels/{menuBackLevelPack}/{menuBackLevel}"
-            map_content = lvl.Level(f"data/levels/{menuBackLevelPack}/{menuBackLevel}", res)
+            menuBackLevel = randint(1, lvlpack_list[menuBackLevelPack]['len'])
+            debug_info["lvl"] = f"data/levels/{menuBackLevelPack}#{menuBackLevel}"
+            levelset = convert.LevelSet(f"data/levels/{menuBackLevelPack}")
+            map_content = lvl.Level(levelset.get_level(menuBackLevel), res)
             parallaxMulti = 2
-            slideDiv = 25 / settings["slide"]["value"]
+            slideDiv = 25 / (settings["slide"]["value"]*2)
         elif resUpdated:
             res = pygame.display.Info()
             res = [res.current_w, res.current_h]
@@ -580,9 +576,10 @@ while active:
             newLvlTimer = round(newLvlTimer)
             if newLvlTimer > 150000:
                 menuBackLevelPack = choice(list(menu_items.keys())[1:-3])
-                menuBackLevel = choice(list(lvlpack_list[menuBackLevelPack]['lvls'].values()))
-                debug_info["lvl"] = f"data/levels/{menuBackLevelPack}/{menuBackLevel}"
-                map_content = lvl.Level(f"data/levels/{menuBackLevelPack}/{menuBackLevel}", res)
+                menuBackLevel = randint(1, lvlpack_list[menuBackLevelPack]['len'])
+                debug_info["lvl"] = f"data/levels/{menuBackLevelPack}#{menuBackLevel}"
+                levelset = convert.LevelSet(f"data/levels/{menuBackLevelPack}")
+                map_content = lvl.Level(temp_levelset.get_level(menuBackLevel), res)
                 newLvlTimer = -150000
                 lvlDirW = randint(-1, 1)
                 lvlDirH = randint(-1, 1)
@@ -684,7 +681,7 @@ while active:
                       (40-slides["display"][1], 190+((50*(-menuIndex))-slides["display"][0])), shadow=True)
         else:
             titles = lvlpack_list[menuLevel]['title'].partition('(')
-            levelList = list(lvlpack_list[menuLevel]['lvls'].keys())
+            levelList = list(range(lvlpack_list[menuLevel]['len']))
             menuMax = len(levelList)-1
             lvlIndex = max(0, min(menuMax, lvlIndex))
             lvls_can_fit = int(res[0]/165)
@@ -703,7 +700,7 @@ while active:
                     draw_text("BigArial", str(i+1), (128, 128, 196),
                               (50+(160*(i % lvls_can_fit))-slides["display"][1],
                                290-((lvlIndex// lvls_can_fit)*160)-slides["display"][0]+(160*(i// lvls_can_fit))), shadow=True, center=True)
-                if save.check_savedata('Completed', menuLevel + '/' + list(lvlpack_list[menuLevel]['lvls'].values())[i], username):
+                if save.check_savedata('Completed', menuLevel + '#' + str(i), username):
                     screen.blit(resources["sprite"]["lvlchecked"],
                                 (80 + (160 * (i % lvls_can_fit)) - slides["display"][1],
                                  300 - ((lvlIndex // lvls_can_fit) * 160) - slides["display"][0] + (160 * (i // lvls_can_fit))))
@@ -720,13 +717,8 @@ while active:
             draw_text("Arial", lvlpack_list[menuLevel]['desc'], (128, 128, 196),
                       (40-slides["display"][1],
                        150+((160*(-(lvlIndex // lvls_can_fit)))-slides["display"][0])), shadow=True)
-    if debug:
+    if showDebugInfo:
         debug_show()
-        #lineRes = pygame.display.Info()
-        #for i in range(1, int(lineRes.current_h/64)):
-        #    pygame.draw.line(screen, (255, 255, 255), (0, 64*i), (lineRes.current_w, 64*i))
-        #for i in range(1, int(lineRes.current_w/64)):
-        #    pygame.draw.line(screen, (255, 255, 255), (64*i, 0), (64*i, lineRes.current_h))
     screen.blit(resources["sprite"]["vignette"], (0, 0))
     pygame.display.flip()
 pygame.quit()
