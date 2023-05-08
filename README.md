@@ -49,9 +49,9 @@ A JSON file is no longer required, simply write out a text file with every level
 python3 convert.py example.txt "Example Title (1970 - Example Co.)" "This is an example description! Both of these variables are required."
 ```
 
-The program's file format begins with the four byte identifier 'SKBN', if this is not present the file will be denied.
-This is followed by an arbitrary sized string representing the title of the level set.
-A newline character follows as a separator, then an arbitrary sized string representing the description of the level set.
-Another newline character separates the description from a 1 byte integer denoting how many levels are present.
-Following is a list of integers, 2 bytes each, the length of which is determined by how many levels there are.
+The program's file format begins with the four byte identifier 'SKBN', if this is not present the file will be denied.  
+This is followed by an arbitrary sized string representing the title of the level set.  
+A newline character follows as a separator, then an arbitrary sized string representing the description of the level set.  
+Another newline character separates the description from a 1 byte integer denoting how many levels are present.  
+Following is a list of integers, 2 bytes each, the length of which is determined by how many levels there are.  
 Finally, the rest of the file is the level data, each ending with a nibble of '1111'. These are padded with a nibble of '0000' if needed, so that they will always be a whole number of bytes.
