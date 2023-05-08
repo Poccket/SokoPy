@@ -32,6 +32,13 @@ Blocks = {
 }
 
 
+Blocks2 = [
+    "!", "!", " ", "@",
+    "#", "$", ".", "*",
+    "+"
+]
+
+
 class LevelSet:
     def __init__(self, filename: str):
         self.filename = filename
@@ -307,6 +314,21 @@ def create_unpacked_levelset(filename):
     print("INFO: Done!")
 
 
+def create_text_levelset(filename):
+    fileset = LevelSet(filename)
+    outlvl = ""
+    for i in range(0, fileset.length):
+        filelvl = fileset.get_level(i)
+        outlvl += f"; {i+1}\n\n"
+        for l in filelvl:
+            for c in l:
+                outlvl += Blocks2[c]
+            outlvl += "\n"
+    with open(f"{filename[:filename.rfind('.')]}.txt", "w") as f:
+        f.write(outlvl)
+    print("INFO: Done!")
+
+
 # TODO: Make it so this script produces one file that is a levelpack, metadata included if possible
 if __name__ == "__main__":
     if len(sys.argv) < 3:
@@ -328,3 +350,5 @@ if __name__ == "__main__":
         pack_levelset(sys.argv[2], sys.argv[3], sys.argv[4])
     elif sys.argv[1] == "packj":
         pack_levelset(sys.argv[2])
+    elif sys.argv[1] == "txt":
+        create_text_levelset(sys.argv[2])

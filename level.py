@@ -31,11 +31,10 @@ atrTable = ["00", "00", "10", "10",
 
 
 # We offloaded this to the convert script but I'd like to leave it here just in case
-def decode_lvl(filename: str):  # , slides["display"]: int = 4): <-- What did this do?
+def decode_lvl(filename: str):
     with open(filename, mode='rb') as f:
         f_content = f.read()
     map_data = [[]]
-    # x = 0 ???
     y = 0
     for index in range(len(f_content)):
         f_byte = "{:08b}".format(f_content[index])
@@ -61,12 +60,6 @@ def get_levelpacks():
         if os.path.isfile(f):
             if meta := convert.unpack_levelset(f):
                 levelpack_list[filename] = {"title": meta['title'], "desc": meta['desc'], "len": meta['length']}
-    #for dirpath, dirnames, files in os.walk(os.path.abspath(os.curdir + "/data/levels/")):
-    #    if "metadata.json" in files:
-    #        with open(dirpath + "/metadata.json", mode='r') as f:
-    #            f_content = f.read()
-    #        meta = json.loads(f_content)
-    #        levelpack_list[os.path.basename(os.path.normpath(dirpath))] = meta['levelpack']
     return levelpack_list
 
 
