@@ -119,6 +119,19 @@ class LevelSet:
             else:
                 map_data[y].append(nibble)
         return map_data
+    def get_levels_as_text(self) -> list:
+        output = []
+        for i in range(self.length):
+            lvl_data = self.get_level(i)
+            for l in lvl_data:
+                lvl_list = []
+                for i, r in enumerate(lvl_data):
+                    lvl_list += [[]]
+                    for c in r:
+                        lvl_list[i] += [Blocks2[c]]
+            output += [lvl_list]
+        return output
+
 
 
 def bytes_to_bitstring(b: bytes, n=None) -> str:
@@ -143,7 +156,7 @@ def write_lvl(filename: str, outdata: bytes) -> None:
     """
     Writes level data (in binary) to a file
     """
-    with open(filename + '.lvl', "w+b") as outfile:
+    with open('data/levels/' + filename + '.lvl', "w+b") as outfile:
         outfile.write(outdata)
     print("INFO: Wrote", len(outdata), "bytes to", filename + '.lvl')
 

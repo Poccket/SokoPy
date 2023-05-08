@@ -536,7 +536,7 @@ while active:
             screen.blit(winShade, (0, 0-(abs(slides["text"][0]*2) if newMode == -1 else 0)))
             nextLevelLine = False
             if menuLevel != "root":
-                levelList = list(range(lvlpack_list[menuLevel]['len']+1))
+                levelList = list(range(lvlpack_list[menuLevel]['len']))
                 levelTitle = menuLevel + '#' + str(levelList[lvlIndex])
                 save.add_savedata('Completed', [levelTitle], username)
                 if lvlIndex < len(levelList) - 1:
