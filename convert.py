@@ -387,6 +387,12 @@ def create_text_levelset(filename):
     print(f"INFO: Created text file {filename[:filename.rfind('.')]}.txt")
 
 
+def update_levelset(textname, setname):
+    fileset = LevelSet(setname)
+    create_packed_levelset(fileset.title, fileset.description, textname)
+    print(f"INFO: Finished updating of {setname}")
+
+
 def recompress(filename):
     fileset = LevelSet(filename)
     create_text_levelset(filename)
@@ -421,3 +427,5 @@ if __name__ == "__main__":
         create_text_levelset(sys.argv[2])
     elif sys.argv[1] == "recompress":
         recompress(sys.argv[2])
+    elif sys.argv[1] == "update":
+        update_levelset(sys.argv[3], sys.argv[2])
