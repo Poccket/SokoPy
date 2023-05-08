@@ -37,9 +37,9 @@ Each block in a level is a 4bit nibble, with the exception that any series of bl
 
 |[]()||||
 |---|---|---|---|
-| EOL | Out of bounds | Walkable | Player spawn |
-| Wall | Crate spawn | Crate goal | Crate (on goal) |
-| Player (on goal) | Null | Null | Null |
+| ! > EOL | Out of bounds | Space > Walkable | @ > Player spawn |
+| # > Wall | $ > Crate spawn | . > Crate goal | * > Crate (on goal) |
+| + > Player (on goal) | Null | Null | Null |
 | Null | Repeat | Null | EOF |
 
 The Repeat nibble will always be followed by two nibbles, one with a value of how many times to repeat, and then the nibble to repeat.
