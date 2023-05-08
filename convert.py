@@ -27,6 +27,7 @@ Blocks = {
     ".": "0110",  # Target
     "*": "0111",  # Crate on Target
     "+": "1000"   # Player on Target
+    #     1101      Next nibble is number of times to repeat the nibble after.
     #     1110      New Line
     #     1111      End Of Level Data
 }
@@ -80,11 +81,23 @@ class LevelSet:
         map_data = [[]]
         # x = 0 ???
         y = 0
+        repeat = False
+        repeatNum = 0
         for index in range(self.level_offsets[level], len(f_content)):
             f_byte = "{:08b}".format(f_content[index])
             if (nibble := int(f_byte[:4], 2)) == 00:
                 y += 1
                 map_data.append([])
+            elif repeat:
+                if repeatNum == 0:
+                    repeatNum = nibble
+                else:
+                    for i in range(0, repeatNum):
+                        map_data[y].append(nibble)
+                    repeat = False
+                    repeatNum = 0
+            elif nibble == 13:
+                repeat = True
             elif nibble == 15:
                 break
             else:
@@ -92,6 +105,16 @@ class LevelSet:
             if (nibble := int(f_byte[4:], 2)) == 00:
                 y += 1
                 map_data.append([])
+            elif repeat:
+                if repeatNum == 0:
+                    repeatNum = nibble
+                else:
+                    for i in range(0, repeatNum):
+                        map_data[y].append(nibble)
+                    repeat = False
+                    repeatNum = 0
+            elif nibble == 13:
+                repeat = True
             elif nibble == 15:
                 break
             else:
@@ -134,15 +157,50 @@ def textlist_to_lvlnew(lvldata: list) -> bytes:
     crate_count = 0
     target_count = 0
     for x in lvldata:
-        for y in x:
-            if y == "$":
-                crate_count += 1
-            if y == ".":
-                target_count += 1
-            if y == "*":
-                crate_count += 1
-                target_count += 1
-            lvl_binary += Blocks[y]
+        last_block = None
+        block_count = 1
+        for n, y in enumerate(x + " "):
+            if n == 0:
+                last_block = y
+                continue
+            if y == last_block and block_count < 15:
+                block_count += 1
+            elif block_count < 4:
+                for b in range(0, block_count):
+                    if last_block == "$":
+                        crate_count += 1
+                    if last_block in [".", "+"]:
+                        target_count += 1
+                    if last_block == "*":
+                        crate_count += 1
+                        target_count += 1
+                    lvl_binary += Blocks[last_block]
+                last_block = y
+                block_count = 1
+            else:
+                if block_count > 15:
+                    print("Uh-oh!!")
+                if last_block == "$":
+                    crate_count += block_count
+                if last_block in [".", "+"]:
+                    target_count += block_count
+                if last_block == "*":
+                    crate_count += block_count
+                    target_count += block_count
+                lvl_binary += "1101" + format(block_count, '04b') + Blocks[last_block]
+                #for b in range(0, block_count):
+                #    if last_block == "$":
+                #        crate_count += 1
+                #    if last_block == ".":
+                #        target_count += 1
+                #    if last_block == "*":
+                #        crate_count += 1
+                #        target_count += 1
+                #    lvl_binary += Blocks[last_block]
+                last_block = y
+                block_count = 1
+
+
         lvl_binary += "0000"
     lvl_binary += "1111"
     if len(lvl_binary) % 8:
@@ -322,11 +380,21 @@ def create_text_levelset(filename):
         outlvl += f"; {i+1}\n\n"
         for l in filelvl:
             for c in l:
+                print(c)
                 outlvl += Blocks2[c]
             outlvl += "\n"
     with open(f"{filename[:filename.rfind('.')]}.txt", "w") as f:
         f.write(outlvl)
-    print("INFO: Done!")
+    print(f"INFO: Created text file {filename[:filename.rfind('.')]}.txt")
+
+
+def recompress(filename):
+    fileset = LevelSet(filename)
+    create_text_levelset(filename)
+    create_packed_levelset(fileset.title, fileset.description, f"{filename[:filename.rfind('.')]}.txt")
+    os.remove(f"{filename[:filename.rfind('.')]}.txt")
+    print(f"INFO: Removed text file {filename[:filename.rfind('.')]}.txt")
+    print(f"INFO: Finished recompression of {filename}")
 
 
 # TODO: Make it so this script produces one file that is a levelpack, metadata included if possible
@@ -352,3 +420,5 @@ if __name__ == "__main__":
         pack_levelset(sys.argv[2])
     elif sys.argv[1] == "txt":
         create_text_levelset(sys.argv[2])
+    elif sys.argv[1] == "recompress":
+        recompress(sys.argv[2])
