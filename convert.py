@@ -19,7 +19,7 @@ import json
 
 
 Blocks = {
-    "!": "0000",
+    "!": "0000",  # New line
     " ": "0010",  # Empty
     "@": "0011",  # Player
     "#": "0100",  # Block
@@ -28,7 +28,6 @@ Blocks = {
     "*": "0111",  # Crate on Target
     "+": "1000"   # Player on Target
     #     1101      Next nibble is number of times to repeat the nibble after.
-    #     1110      New Line
     #     1111      End Of Level Data
 }
 
