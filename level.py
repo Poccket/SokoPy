@@ -125,6 +125,7 @@ class Level:
             "height": int(screen_dimensions[1]/128) + 1,
             "width": int(screen_dimensions[0]/128) + 1,
         }
+        self.shakeDelay = 2
         for x, row in enumerate(self.data):
             for y, col in enumerate(row):
                 if col == 3:
@@ -188,6 +189,7 @@ class Level:
     def move_player(self, direction: list[int], slides):
         self.player[2] = (0 if direction[0] == -1 else 2) if direction[0] else (3 if direction[1] == -1 else 1)
         if atrTable[self.data[self.player[0] + direction[0]][self.player[1] + direction[1]]][0] == "1":
+            self.shakeDelay = 2
             self.capture()
             self.player[0] += direction[0]
             self.player[1] += direction[1]
@@ -201,6 +203,7 @@ class Level:
                 slides["character"][1] += 64*direction[1]
         elif atrTable[self.data[self.player[0] + direction[0]][self.player[1] + direction[1]]][1] == "1":
             if atrTable[self.data[self.player[0] + (direction[0]*2)][self.player[1] + (direction[1]*2)]][0] == "1":
+                self.shakeDelay = 2
                 self.capture()
                 if self.data[self.player[0] + direction[0]][self.player[1] + direction[1]] == 5:
                     self.data[self.player[0] + (direction[0]*2)][self.player[1] + (direction[1]*2)] = 5 if \
@@ -224,9 +227,15 @@ class Level:
                 else:
                     slides["character"][1] += 64*direction[1]
             else:
-                slides["shake"] = 3
+                if self.shakeDelay == 0:
+                    slides["shake"] = 3
+                else:
+                    self.shakeDelay -= 1
         else:
-            slides["shake"] = 3
+            if self.shakeDelay == 0:
+                slides["shake"] = 3
+            else:
+                self.shakeDelay -= 1
 
     def render(self, screen_dimensions: list[int], slides: dict, screen, resources, tiles,
                dt, mod=0, modw=0, parallax=1, player=True, modsize=0):  # TODO: Too many goddamn variables

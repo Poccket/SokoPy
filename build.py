@@ -73,25 +73,39 @@ def update_grid():
 update_grid()
 
 
+def fancy_square(x, y, w, h, col):
+    rect = pygame.Rect(x, y, w, h)
+    pygame.draw.rect(screen, (col+8, col+8, col+8), rect, 0)
+    rect = pygame.Rect(x+2, y+2, w-2, h-2)
+    pygame.draw.rect(screen, (col-8, col-8, col-8), rect, 0)
+    rect = pygame.Rect(x+2, y+2, w-4, h-4)
+    pygame.draw.rect(screen, (col, col, col), rect, 0)
+    return
+
+
 def draw_sprite(sprite, pos):
     screen.blit(resources["sprite"][sprite], pos)
 
 
-def draw_text(text, color, pos, size=24, center=True, shadow=False):
+def draw_text(text, color, pos, size=24, center=True, shadow=True):
     text_main = pygame.font.SysFont("Arial", size, bold=True).render(text, True, color)
     if center:
         text_main_pos = text_main.get_rect(center=pos)
     else:
         text_main_pos = pos
     if shadow:
-        text_shadow = pygame.font.SysFont("Arial", 24, bold=True).render(text, True, (0, 0, 0))
+        text_shadow = pygame.font.SysFont("Arial", size, bold=True).render(text, True, (0, 0, 0))
         if center:
             text_shadow_pos = text_shadow.get_rect(center=(pos[0], pos[1]+3))
         else:
             text_shadow_pos = (pos[0]+3, pos[1]+3)
         screen.blit(text_shadow, text_shadow_pos)
     screen.blit(text_main, text_main_pos)
-    return pygame.font.SysFont("Arial", 24, bold=True).size(text)[0]
+    return pygame.font.SysFont("Arial", size, bold=True).size(text)[0]
+
+
+def text_len(text, size):
+    return pygame.font.SysFont("Arial", size, bold=True).size(text)[0]
 
 
 for s in resources["sprite"].keys():
@@ -156,17 +170,10 @@ def draw_grid():
         if -32 < (x + wconst)-CAMR < width:
             for y in range(0, 32 * grid_size, block_size):
                 if -32 < (y + hconst)-CAMD < height:
-                    rect = pygame.Rect((x + wconst) - CAMR, (y + hconst) - CAMD, block_size, block_size)
                     if (x/32+y/32)%2:
-                        pygame.draw.rect(screen, (96, 96, 96), rect, 0)
+                        fancy_square((x + wconst) - CAMR, (y + hconst) - CAMD, block_size, block_size, 96)
                     else:
-                        pygame.draw.rect(screen, (64, 64, 64), rect, 0)
-                        rect = pygame.Rect((x + wconst) - CAMR + 2,
-                                           (y + hconst) - CAMD + 2, block_size - 2, block_size - 2)
-                        pygame.draw.rect(screen, (48, 48, 48), rect, 0)
-                        rect = pygame.Rect((x + wconst) - CAMR + 2,
-                                           (y + hconst) - CAMD + 2, block_size - 4, block_size - 4)
-                        pygame.draw.rect(screen, (56, 56, 56), rect, 0)
+                        fancy_square((x + wconst) - CAMR, (y + hconst) - CAMD, block_size, block_size, 48)
                     if meta["levels"][currlvl][int(x/32)][int(y/32)] == "+":
                         draw_sprite(BlockSprites["."], ((x + wconst) - CAMR, (y + hconst) - CAMD))
                         draw_sprite(BlockSprites["@"], ((x + wconst) - CAMR, (y + hconst) - CAMD))
@@ -181,12 +188,13 @@ CAMH = 0
 PLACE = 0
 SELNUMS = [K_1, K_2, K_3, K_4, K_5]
 SELS = [" ", "@", "#", "$", "."]
-fakes = ["Return - Open Menu", "Minus/Plus - Change Size"]
+tools = ["Menu", "+", "-", "Undo", "Redo"]
 menu = ["Change Level", "Save Levels", "Load Levels", "Run SokoPy", "Change Title", "Change Description", "Delete Level", "Exit"]
 menuOpen = False
 changeLevel = False
 menuSel = 0
 largestMenu = 0
+largestTool = 0
 CURRSEL = 3
 PLAYER = None
 lvlfiles = list(level.get_levelpacks().keys())
@@ -197,14 +205,141 @@ changeDesc = False
 saved = True
 tempTitle = meta["title"]
 tempDesc = meta["description"]
+mLight = -1
+history = []
+future = []
+pressedMenu = False
+menuOffset = 1
 while running:
     clock.tick(FPS)
     for event in pygame.event.get():
         if event.type == pygame.MOUSEBUTTONDOWN:
-            PLACE = 1
-            saved = False
+            if event.button == 1:
+                mpos = pygame.mouse.get_pos()
+                if menuOpen and 0 < mpos[0] < largestMenu and (height-24-(len(menu)*26)) < mpos[1] < height-20:
+                        menuSel = int((mpos[1]-(height-24-(len(menu)*26)))/26)
+                        pressedMenu = True
+                elif menuOpen:
+                    menuOpen = False
+                elif loadLevels and (width/2-250) < mpos[0] < (width/2+250) and (height/2-75) < mpos[1] < (height/2+75):
+                    if (mpos[1]-(height/2-75)) % 35 > 30:
+                        continue
+                    menuSel = int((mpos[1]-(height/2-75))/35) + menuOffset - 1
+                    pressedMenu = True
+                elif changeLevel and (width/2-150) < mpos[0] < (width/2+150) and (height/2) < mpos[1] < (height/2+40):
+                    menuSel = int((mpos[0]-((width/2-150)))/50) + menuOffset-1
+                    pressedMenu = True
+                elif 0 < mpos[0] < 40 and 64 < mpos[1] < 64+(40*len(SELS)):
+                    x = mpos[1]-64
+                    x = int(x/40)
+                    CURRSEL = x
+                elif 0 < mpos[0] < width and height-20 < mpos[1] < height:
+                    for l in toolLengths:
+                        if 0 < mpos[0] < l:
+                            todo = toolLengths.index(l)
+                            mLight = todo
+                            if todo == 0:
+                                menuOpen = not menuOpen
+                            elif todo == 1:
+                                future = []
+                                history += [deepcopy(meta["levels"][currlvl])]
+                                grid_size += 1 if grid_size < 128 else 0
+                                for lvl in meta["levels"][currlvl]:
+                                    lvl += [" "]
+                                newl = []
+                                for y in range(grid_size):
+                                    newl += [" "]
+                                meta["levels"][currlvl] += [newl]
+                                wconst = (width / 2) - (32 * grid_size / 2)
+                                hconst = (height / 2) - (32 * grid_size / 2)
+                            elif todo == 2:
+                                future = []
+                                history += [deepcopy(meta["levels"][currlvl])]
+                                grid_size -= 1 if grid_size > 1 else 0
+                                for i in range(0, grid_size):
+                                    meta["levels"][currlvl][i] = meta["levels"][currlvl][i][:-1]
+                                meta["levels"][currlvl] = meta["levels"][currlvl][:-1]
+                                wconst = (width / 2) - (32 * grid_size / 2)
+                                hconst = (height / 2) - (32 * grid_size / 2)
+                            elif todo == 3:
+                                if len(history):
+                                    future += [meta["levels"][currlvl]]
+                                    meta["levels"][currlvl] = history[-1]
+                                    history = history[:-1]
+                                update_grid()
+                            elif todo == 4:
+                                if len(future):
+                                    history += [meta["levels"][currlvl]]
+                                    meta["levels"][currlvl] = future[-1]
+                                    future = future[:-1]
+                                update_grid()
+                            break
+                else:
+                    future = []
+                    history += [deepcopy(meta["levels"][currlvl])]
+                    PLACE = 1
         elif event.type == pygame.MOUSEBUTTONUP:
+            mLight = -1
             PLACE = 0
+            if pressedMenu:
+                pressedMenu = False
+                if menuSel == -1:
+                    continue
+                if menuOpen:
+                    if menuSel == 0:
+                        menuSel = currlvl
+                        changeLevel = True
+                    elif menuSel == 1:
+                        commit_save()
+                        saved = True
+                    elif menuSel == 2:
+                        menuSel = 0
+                        loadLevels = True
+                    elif menuSel == 3:
+                        subprocess.run(["python3", "main.py"])
+                    elif menuSel == 4:
+                        changeTitle = True
+                    elif menuSel == 5:
+                        changeDesc = True
+                    elif menuSel == 6:
+                        if len(meta["levels"]) > 1:
+                            meta["levels"].pop(currlvl)
+                            if currlvl >= len(meta["levels"])-1:
+                                currlvl -= 1
+                            update_grid()
+                    elif menuSel == 7:
+                        running = False
+                    menuOpen = False
+                elif loadLevels:
+                    if menuSel == len(lvlfiles):
+                        meta = {
+                            "title": "Your Levels",
+                            "description": "Change me!",
+                            "levels": [deepcopy(default_level)]
+                        }
+                    else:
+                        load_save(lvlfiles[menuSel])
+                    currlvl = 0
+                    update_grid()
+                    loadLevels = False
+                elif changeLevel:
+                    if menuSel == len(meta["levels"]):
+                        currlvl = len(meta["levels"])
+                        meta["levels"] += [deepcopy(default_level)]
+                    else:
+                        currlvl = menuSel
+                    update_grid()
+                    changeLevel = False
+        elif event.type == pygame.MOUSEWHEEL:
+            if menuOpen:
+                menuSel = menuSel - event.y
+                menuSel = min(len(menu)-1, max(menuSel, 0))
+            elif loadLevels:
+                menuSel = menuSel - event.y
+                menuSel = min(len(lvlfiles), max(menuSel, 0))
+            elif changeLevel:
+                menuSel = menuSel - event.y
+                menuSel = min(len(meta["levels"]), max(menuSel, 0))
         elif event.type == pygame.KEYDOWN:
             if changeTitle or changeDesc:
                 if changeTitle:
@@ -234,6 +369,8 @@ while running:
                 if event.key in SELNUMS:
                     CURRSEL = SELNUMS.index(event.key)
                 elif event.key in [K_PLUS, K_EQUALS]:
+                    future = []
+                    history += [deepcopy(meta["levels"][currlvl])]
                     grid_size += 1 if grid_size < 128 else 0
                     for lvl in meta["levels"][currlvl]:
                         lvl += [" "]
@@ -248,6 +385,8 @@ while running:
                     changeLevel = False
                     loadLevels = False
                 elif event.key == K_MINUS:
+                    future = []
+                    history += [deepcopy(meta["levels"][currlvl])]
                     grid_size -= 1 if grid_size > 1 else 0
                     for i in range(0, grid_size):
                         meta["levels"][currlvl][i] = meta["levels"][currlvl][i][:-1]
@@ -301,7 +440,7 @@ while running:
                             running = False
                         menuOpen = False
                     else:
-                        menuSel = 0
+                        menuSel = -1
                         menuOpen = True
                 elif menuOpen and event.key == K_UP:
                     menuSel = menuSel-1 if menuSel > 0 else len(menu)-1
@@ -352,10 +491,23 @@ while running:
             CAMR += 12 if CAMR < 16 * grid_size else 0
         elif CAMH == -1:
             CAMR -= 12 if CAMR > -16 * grid_size else 0
+    if pressedMenu:
+        mpos = pygame.mouse.get_pos()
+        if menuOpen:
+            if 0 < mpos[0] < largestMenu and (height-24-(len(menu)*26)) < mpos[1] < height-20:
+                menuSel = int((mpos[1]-(height-24-(len(menu)*26)))/26)
+            else:
+                menuSel = -1
+        elif loadLevels:
+            if (width/2-250) < mpos[0] < (width/2+250) and (height/2-75) < mpos[1] < (height/2+75):
+                menuSel = int((mpos[1]-(height/2-75))/35) + menuOffset - 1
+            else:
+                menuSel = -1
     if PLACE:
         mpos = pygame.mouse.get_pos()
         mx, my = int((mpos[0] - wconst + CAMR) / 32), int((mpos[1] - hconst + CAMD) / 32)
         if 0 <= mx < grid_size and 0 <= my < grid_size:
+            saved = False
             if CURRSEL == 1:
                 if PLAYER is not None:
                     if meta["levels"][currlvl][PLAYER[0]][PLAYER[1]] == "+":
@@ -384,8 +536,7 @@ while running:
     screen.fill((0, 0, 0))
     draw_grid()
     for i, s in enumerate(SELS):
-        rect = pygame.Rect(1, (i*40)+64, 40, 40)
-        pygame.draw.rect(screen, (96, 96, 96) if i == CURRSEL else (64, 64, 64), rect, 0)
+        fancy_square(1, (i*40)+64, 40, 40, 96 if i == CURRSEL else 64)
         if s == "+":
             draw_sprite(BlockSprites["@"], (4, (40*i)+68))
             draw_sprite(BlockSprites["."], (4, (40*i)+68))
@@ -393,46 +544,33 @@ while running:
             if BlockSprites[s] is not None:
                 draw_sprite(BlockSprites[s], (4, (40*i)+68))
         draw_text(str(i+1), (192, 192, 192), (40, (40*i)+72), 12)
-
+    if len(history) > 25:
+        history = history[:25]
     if menuOpen:
-        fakes = ["Return - Select", "Up/Down - Move Selection", "Escape - Cancel"]
         if saved:
             menu[-1] = "Exit"
         else:
             menu[-1] = "Exit   ! Not Saved !"
-        rect = pygame.Rect(0, height - 24 - (len(menu) * 26), largestMenu + 12, (len(menu) * 26))
-        pygame.draw.rect(screen, (64, 64, 64), rect, 0)
-        rect = pygame.Rect(2, height - 22 - (len(menu) * 26), largestMenu + 10, (len(menu) * 26) - 2)
-        pygame.draw.rect(screen, (48, 48, 48), rect, 0)
-        rect = pygame.Rect(2, height - 22 - (len(menu) * 26), largestMenu + 8, (len(menu) * 26) - 4)
-        pygame.draw.rect(screen, (56, 56, 56), rect, 0)
+        fancy_square(0, height - 24 - (len(menu) * 26), largestMenu + 12, (len(menu) * 26), 56)
         for i, m in enumerate(menu):
             if i == menuSel:
-                rect = pygame.Rect(0, height - 24 - (len(menu) * 26) + (i * 26), largestMenu + 12, 26)
-                pygame.draw.rect(screen, (96, 96, 96), rect, 0)
-                rect = pygame.Rect(2, height - 22 - (len(menu) * 26) + (i * 26), largestMenu + 10, 24)
-                pygame.draw.rect(screen, (64, 64, 64), rect, 0)
-                rect = pygame.Rect(2, height - 22 - (len(menu) * 26) + (i * 26), largestMenu + 8, 22)
-                pygame.draw.rect(screen, (72, 72, 72), rect, 0)
+                fancy_square(0, height - 24 - (len(menu) * 26) + (i * 26), largestMenu + 12, 26, 64)
             menuS = draw_text(m, (192, 192, 192), (4, height - 22 - (len(menu) * 26) + (i * 26)), 18, center=False)
             if menuS > largestMenu:
                 largestMenu = menuS
     elif changeLevel:
-        fakes = ["Return - Select", "Left/Right - Move Selection", "Escape - Cancel"]
-        rect = pygame.Rect(width / 2 - 150, height / 2 - 75, 300, 150)
-        pygame.draw.rect(screen, (64, 64, 64), rect, 0)
-        rect = pygame.Rect(width / 2 - 148, height / 2 - 73, 298, 148)
-        pygame.draw.rect(screen, (48, 48, 48), rect, 0)
-        rect = pygame.Rect(width / 2 - 148, height / 2 - 73, 296, 146)
-        pygame.draw.rect(screen, (56, 56, 56), rect, 0)
+        fancy_square(width / 2 - 150, height / 2 - 75, 300, 150, 56)
         draw_text("Change level:", (192, 192, 192), (width / 2, height / 2 - 40))
         for i in range(0, len(meta["levels"])+1):
-            hpos = width / 2 - (95 + menuSel * 50) + (i * 50)
+            if menuOffset < menuSel-4:
+                menuOffset = menuSel-4
+            if menuOffset > menuSel+1:
+                menuOffset = menuSel+1
+            hpos = width / 2 - (95 + menuOffset * 50) + (i * 50)
             if hpos < width/2-150 or hpos > width/2+150:
                 continue
             vpos = height / 2
-            rect = pygame.Rect(hpos, vpos, 40, 40)
-            pygame.draw.rect(screen, (96, 96, 96) if i == menuSel else (72, 72, 72), rect, 0)
+            fancy_square(hpos, vpos, 40, 40, 96 if i == menuSel else 72)
             if i == currlvl:
                 draw_text("↑", (192, 192, 192), (hpos+20, vpos+50))
             if i >= len(meta["levels"]):
@@ -440,62 +578,44 @@ while running:
             else:
                 draw_text(str(i), (192, 192, 192), (hpos+20, vpos+20))
     elif changeTitle:
-        fakes = ["Return - Save", "Escape - Cancel"]
-        rect = pygame.Rect(width / 2 - 250, height / 2 - 75, 500, 150)
-        pygame.draw.rect(screen, (64, 64, 64), rect, 0)
-        rect = pygame.Rect(width / 2 - 248, height / 2 - 73, 498, 148)
-        pygame.draw.rect(screen, (48, 48, 48), rect, 0)
-        rect = pygame.Rect(width / 2 - 248, height / 2 - 73, 496, 146)
-        pygame.draw.rect(screen, (56, 56, 56), rect, 0)
+        fancy_square(width / 2 - 250, height / 2 - 75, 500, 150, 56)
         draw_text("Change Title:", (192, 192, 192), (width / 2, height / 2 - 40))
         rect = pygame.Rect(width / 2 - 248, height / 2 - 15, 496, 30)
         pygame.draw.rect(screen, (96, 96, 96), rect, 0)
         draw_text(tempTitle, (192, 192, 192), (width / 2, height / 2))
     elif changeDesc:
-        fakes = ["Return - Save", "Escape - Cancel"]
-        rect = pygame.Rect(width / 2 - 250, height / 2 - 75, 500, 150)
-        pygame.draw.rect(screen, (64, 64, 64), rect, 0)
-        rect = pygame.Rect(width / 2 - 248, height / 2 - 73, 498, 148)
-        pygame.draw.rect(screen, (48, 48, 48), rect, 0)
-        rect = pygame.Rect(width / 2 - 248, height / 2 - 73, 496, 146)
-        pygame.draw.rect(screen, (56, 56, 56), rect, 0)
+        fancy_square(width / 2 - 250, height / 2 - 75, 500, 150, 56)
         draw_text("Change Description:", (192, 192, 192), (width / 2, height / 2 - 40))
         rect = pygame.Rect(width / 2 - 248, height / 2 - 15, 496, 30)
         pygame.draw.rect(screen, (96, 96, 96), rect, 0)
         draw_text(tempDesc, (192, 192, 192), (width / 2, height / 2))
     elif loadLevels:
-        fakes = ["Return - Select", "Up/Down - Move Selection", "Escape - Cancel"]
-        rect = pygame.Rect(width / 2 - 250, height / 2 - 75, 500, 150)
-        pygame.draw.rect(screen, (64, 64, 64), rect, 0)
-        rect = pygame.Rect(width / 2 - 248, height / 2 - 73, 498, 148)
-        pygame.draw.rect(screen, (48, 48, 48), rect, 0)
-        rect = pygame.Rect(width / 2 - 248, height / 2 - 73, 496, 146)
-        pygame.draw.rect(screen, (56, 56, 56), rect, 0)
+        fancy_square(width / 2 - 250, height / 2 - 75, 500, 150, 56)
         for i in range(0, len(lvlfiles)+1):
+            if menuOffset < menuSel-2:
+                menuOffset = menuSel-2
+            if menuOffset > menuSel+1:
+                menuOffset = menuSel+1
             hpos = width / 2 - 250
-            vpos = height / 2 - 33 - (35 * menuSel) + (i * 35)
+            vpos = height / 2 - 33 - (35 * menuOffset) + (i * 35)
             if vpos < height/2-70 or vpos > height/2+60:
                 continue
-            rect = pygame.Rect(hpos+2, vpos, 496, 30)
-            pygame.draw.rect(screen, (96, 96, 96) if i == menuSel else (72, 72, 72), rect, 0)
+            fancy_square(hpos+2, vpos, 496, 30, 96 if i == menuSel else 72)
             if i >= len(lvlfiles):
                 draw_text("New Levels", (192, 192, 192), (hpos+250, vpos+15))
             else:
                 draw_text(lvlfiles[i], (192, 192, 192), (hpos+250, vpos+15))
-    else:
-        fakes = ["Return - Open Menu", "Minus/Plus - Change Size"]
 
-    out = ""
-    for s in fakes:
-        out += s + "  /  "
-    out = out[:-4]
-    rect = pygame.Rect(0, height - 24, width, 24)
-    pygame.draw.rect(screen, (64, 64, 64), rect, 0)
-    rect = pygame.Rect(2, height - 22, width, 24)
-    pygame.draw.rect(screen, (48, 48, 48), rect, 0)
-    rect = pygame.Rect(2, height - 22, width - 2, 22)
-    pygame.draw.rect(screen, (56, 56, 56), rect, 0)
-    draw_text(out, (192, 192, 192), (8, height - 20), 18, center=False)
+    fancy_square(0, height - 24, width, 24, 56)
+    offset = 0
+    toolLengths = []
+    for i, s in enumerate(tools):
+        col = 72 if (i == 0 and menuOpen) or mLight == i else 56
+        w = text_len(s, 16) + 18
+        toolLengths += [offset+w]
+        fancy_square(offset+(i*largestTool), height - 24, w, 24, col)
+        draw_text(s, (192, 192, 192), (offset+8+(i*largestTool), height - 20), 16, center=False)
+        offset += w
     total_crates = 0
     total_targets = 0
     for l in meta["levels"][currlvl]:

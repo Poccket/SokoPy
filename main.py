@@ -286,9 +286,9 @@ while active:
                                         settings["prof"]["value"] = "User"
                                     else:
                                         settings["prof"]["value"] = saves[0]
-                                    slides["shake"] = 60
+                                    slides["shake"] = 0 # 60
                                 else:
-                                    slides["shake"] = 30
+                                    slides["shake"] = 0 # 30
                                     erasing = 1
                             else:
                                 setting = list(settings.keys())[menuIndex]
