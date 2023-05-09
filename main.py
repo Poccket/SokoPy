@@ -1,6 +1,7 @@
 # -- Default imports
 import argparse
 import time
+import os
 # -- Limited default imports
 from contextlib import redirect_stdout
 from random import randint, seed, choice
@@ -37,41 +38,45 @@ screen = pygame.display.set_mode([960, 960], pygame.RESIZABLE)
 clock = pygame.time.Clock()
 
 
+def load_file(filename: str) -> str:
+    return os.path.join(os.path.dirname(__file__), filename)
+
+
 resources = {
     "font": {
         "Arial": pygame.font.SysFont("Arial", 36, bold=True),
         "BigArial": pygame.font.SysFont("Arial", 64, bold=True),
     },
     "sprite": {
-        "shade":        pygame.image.load(f"data/sprites/shade.png").convert_alpha(),
-        "shadient":     pygame.image.load(f"data/sprites/shadient.png").convert_alpha(),
-        "vignette":     pygame.image.load(f"data/sprites/vignette.png").convert_alpha(),
-        "gbrick":       pygame.image.load(f"data/sprites/grayFloor.png").convert_alpha(),
-        "ggrass":       pygame.image.load(f"data/sprites/grassFloor.png").convert_alpha(),
-        "rbrick":       pygame.image.load(f"data/sprites/redBrick.png").convert_alpha(),
-        "rbricksheet":  pygame.image.load(f"data/sprites/redBrickSheet.png").convert_alpha(),
-        "crate":        pygame.image.load(f"data/sprites/crateBrown.png").convert_alpha(),
-        "cratedark":    pygame.image.load(f"data/sprites/crateBrownOnTarget.png").convert_alpha(),
-        "target":       pygame.image.load(f"data/sprites/target.png").convert_alpha(),
+        "shade":        pygame.image.load(load_file(f"data/sprites/shade.png")).convert_alpha(),
+        "shadient":     pygame.image.load(load_file(f"data/sprites/shadient.png")).convert_alpha(),
+        "vignette":     pygame.image.load(load_file(f"data/sprites/vignette.png")).convert_alpha(),
+        "gbrick":       pygame.image.load(load_file(f"data/sprites/grayFloor.png")).convert_alpha(),
+        "ggrass":       pygame.image.load(load_file(f"data/sprites/grassFloor.png")).convert_alpha(),
+        "rbrick":       pygame.image.load(load_file(f"data/sprites/redBrick.png")).convert_alpha(),
+        "rbricksheet":  pygame.image.load(load_file(f"data/sprites/redBrickSheet.png")).convert_alpha(),
+        "crate":        pygame.image.load(load_file(f"data/sprites/crateBrown.png")).convert_alpha(),
+        "cratedark":    pygame.image.load(load_file(f"data/sprites/crateBrownOnTarget.png")).convert_alpha(),
+        "target":       pygame.image.load(load_file(f"data/sprites/target.png")).convert_alpha(),
         # TODO: Spritesheet-ify the player please!
         "player":      [
-                            pygame.image.load(f"data/sprites/playerStill0.png").convert_alpha(),
-                            pygame.image.load(f"data/sprites/playerStill1.png").convert_alpha(),
-                            pygame.image.load(f"data/sprites/playerStill2.png").convert_alpha(),
-                            pygame.image.load(f"data/sprites/playerStill3.png").convert_alpha(),
-                            pygame.image.load(f"data/sprites/playerWalk00.png").convert_alpha(),
-                            pygame.image.load(f"data/sprites/playerWalk10.png").convert_alpha(),
-                            pygame.image.load(f"data/sprites/playerWalk20.png").convert_alpha(),
-                            pygame.image.load(f"data/sprites/playerWalk30.png").convert_alpha(),
-                            pygame.image.load(f"data/sprites/playerWalk01.png").convert_alpha(),
-                            pygame.image.load(f"data/sprites/playerWalk11.png").convert_alpha(),
-                            pygame.image.load(f"data/sprites/playerWalk21.png").convert_alpha(),
-                            pygame.image.load(f"data/sprites/playerWalk31.png").convert_alpha()
+                            pygame.image.load(load_file(f"data/sprites/playerStill0.png")).convert_alpha(),
+                            pygame.image.load(load_file(f"data/sprites/playerStill1.png")).convert_alpha(),
+                            pygame.image.load(load_file(f"data/sprites/playerStill2.png")).convert_alpha(),
+                            pygame.image.load(load_file(f"data/sprites/playerStill3.png")).convert_alpha(),
+                            pygame.image.load(load_file(f"data/sprites/playerWalk00.png")).convert_alpha(),
+                            pygame.image.load(load_file(f"data/sprites/playerWalk10.png")).convert_alpha(),
+                            pygame.image.load(load_file(f"data/sprites/playerWalk20.png")).convert_alpha(),
+                            pygame.image.load(load_file(f"data/sprites/playerWalk30.png")).convert_alpha(),
+                            pygame.image.load(load_file(f"data/sprites/playerWalk01.png")).convert_alpha(),
+                            pygame.image.load(load_file(f"data/sprites/playerWalk11.png")).convert_alpha(),
+                            pygame.image.load(load_file(f"data/sprites/playerWalk21.png")).convert_alpha(),
+                            pygame.image.load(load_file(f"data/sprites/playerWalk31.png")).convert_alpha()
                         ],
-        "lvlbutton":    pygame.image.load(f"data/sprites/levelbutton.png").convert_alpha(),
-        "selbutton":    pygame.image.load(f"data/sprites/selectedbutton.png").convert_alpha(),
-        "lvlcheck":     pygame.image.load(f"data/sprites/checkbox.png").convert_alpha(),
-        "lvlchecked":   pygame.image.load(f"data/sprites/checkedbox.png").convert_alpha(),
+        "lvlbutton":    pygame.image.load(load_file(f"data/sprites/levelbutton.png")).convert_alpha(),
+        "selbutton":    pygame.image.load(load_file(f"data/sprites/selectedbutton.png")).convert_alpha(),
+        "lvlcheck":     pygame.image.load(load_file(f"data/sprites/checkbox.png")).convert_alpha(),
+        "lvlchecked":   pygame.image.load(load_file(f"data/sprites/checkedbox.png")).convert_alpha(),
     },
     "sound": {
     },
