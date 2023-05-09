@@ -155,7 +155,7 @@ def write_lvl(filename: str, outdata: bytes) -> None:
     """
     Writes level data (in binary) to a file
     """
-    with open('data/levels/' + filename + '.lvl', "w+b") as outfile:
+    with open('levels/' + filename + '.lvl', "w+b") as outfile:
         outfile.write(outdata)
     print("INFO: Wrote", len(outdata), "bytes to", filename + '.lvl')
 

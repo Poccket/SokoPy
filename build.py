@@ -50,13 +50,16 @@ screen = pygame.display.set_mode((width, height))
 pygame.display.set_caption("SokoPy Builder")
 clock = pygame.time.Clock()
 
+def load_file(filename: str) -> str:
+    return os.path.join(os.path.dirname(__file__), filename)
+
 resources = {
     "sprite": {
-        "player":       pygame.image.load(f"data/sprites/playerStill2.png").convert_alpha(),
-        "rbrick":       pygame.image.load(f"data/sprites/redBrick.png").convert_alpha(),
-        "crate":        pygame.image.load(f"data/sprites/crateBrown.png").convert_alpha(),
-        "cratedark":    pygame.image.load(f"data/sprites/crateBrownOnTarget.png").convert_alpha(),
-        "target":       pygame.image.load(f"data/sprites/target.png").convert_alpha(),
+        "player":       pygame.image.load(load_file(f"sprites/playerStill2.png")).convert_alpha(),
+        "rbrick":       pygame.image.load(load_file(f"sprites/redBrick.png")).convert_alpha(),
+        "crate":        pygame.image.load(load_file(f"sprites/crateBrown.png")).convert_alpha(),
+        "cratedark":    pygame.image.load(load_file(f"sprites/crateBrownOnTarget.png")).convert_alpha(),
+        "target":       pygame.image.load(load_file(f"sprites/target.png")).convert_alpha(),
     },
 }
 
@@ -113,7 +116,7 @@ for s in resources["sprite"].keys():
 
 
 def load_save(filename):
-    fileset = convert.LevelSet(f"data/levels/{filename}")
+    fileset = convert.LevelSet(f"levels/{filename}")
     global meta
     meta["title"] = fileset.title
     meta["description"] = fileset.description
@@ -441,7 +444,23 @@ while running:
                             menuSel = 0
                             loadLevels = True
                         elif menuSel == 3:
-                            subprocess.run(["python3", "main.py"])
+                            dirCont = os.listdir("./")
+                            argfile = meta["title"] + ".lvl#" + str(currlvl)
+                            if "SokoPy.exe" in dirCont:
+                                print(["SokoPy.exe", "--level", argfile])
+                                subprocess.run(["SokoPy.exe", "--level", argfile])
+                            elif "SokoPy" in dirCont:
+                                print(["./SokoPy", "--level", argfile])
+                                subprocess.run(["./SokoPy", "--level", argfile])
+                            elif "SokoPy.bin" in dirCont:
+                                print(["./SokoPy.bin", "--level", argfile])
+                                subprocess.run(["./SokoPy.bin", "--level", argfile])
+                            elif "main.bin" in dirCont:
+                                print(["./main.bin", "--level", argfile])
+                                subprocess.run(["./main.bin", "--level", argfile])
+                            elif "main.py" in dirCont:
+                                print(["python3", "main.py", "--level", argfile])
+                                subprocess.run(["python3", "main.py", "--level", argfile])
                         elif menuSel == 4:
                             changeTitle = True
                         elif menuSel == 5:

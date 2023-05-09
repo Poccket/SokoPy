@@ -53,10 +53,10 @@ def decode_lvl(filename: str):
 
 def get_levelpacks():
     levelpack_list = {}
-    for filename in os.listdir("./data/levels/"):
+    for filename in os.listdir("./levels/"):
         if filename == "tutorial.lvl":
             continue
-        f = os.path.join("./data/levels/", filename)
+        f = os.path.join("./levels/", filename)
         if os.path.isfile(f):
             if meta := convert.unpack_levelset(f):
                 levelpack_list[filename] = {"title": meta['title'], "desc": meta['desc'], "len": meta['length']}

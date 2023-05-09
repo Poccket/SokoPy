@@ -13,7 +13,7 @@ def commit_save(savedata: dict, username) -> None:
         if isinstance((savedata[i]), list):
             savedata[i].sort()
     json_vers = json.dumps(savedata)
-    with lzma.open("data/" + username + '.save', 'wb') as f:
+    with lzma.open("saves/" + username + '.save', 'wb') as f:
         f.write(json_vers.encode())
     return
 
@@ -24,13 +24,13 @@ def get_save(username) -> dict:
     then returns the dictionary.
     """
     username = username.lower()
-    with lzma.open("data/" + username + '.save', 'rb') as f:
+    with lzma.open("saves/" + username + '.save', 'rb') as f:
         return json.loads(f.read().decode())
 
 
 def list_saves() -> list:
     saves = []
-    dir_contents = os.listdir("data")
+    dir_contents = os.listdir("saves")
     for item in dir_contents:
         if item[-5:] == ".save":
             saves += [item[:-5]]
@@ -45,7 +45,7 @@ def init_save(username) -> list:
     """
     if username:
         username = username.lower()
-        if os.path.exists("data/" + username + '.save'):
+        if os.path.exists("saves/" + username + '.save'):
             return []
         else:
             commit_save({"Completed": [], "Settings": {}}, username)
@@ -73,7 +73,7 @@ def erase_save(username) -> None:
     Rewrites the save with default settings.
     """
     username = username.lower()
-    os.remove("data/" + username + '.save')
+    os.remove("saves/" + username + '.save')
     return
 
 
@@ -125,8 +125,8 @@ def compress_save(username) -> None:
     if os.path.exists(username + ".json"):
         with open(username + ".json", 'rt') as f:
             commit_save(json.load(f), username)
-            jsonSize = os.path.getsize("data/" + username + ".json")
-            lzmaSize = os.path.getsize("data/" + username + ".save")
+            jsonSize = os.path.getsize("saves/" + username + ".json")
+            lzmaSize = os.path.getsize("saves/" + username + ".save")
             print(f"Compressed {jsonSize} to {lzmaSize}, saving {round((1-(lzmaSize/jsonSize))*100)}% of the space!")
     else:
         print("No decompressed save file to compress")

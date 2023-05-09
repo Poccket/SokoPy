@@ -2,6 +2,11 @@
 *.save
 *.save.bak
 
+# Nuitka Build folders
+*.build
+*.dist
+*.onefile-build
+
 # Scalene profile
 profile.json
 

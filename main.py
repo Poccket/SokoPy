@@ -22,7 +22,7 @@ import convert
 # -- Parser startup
 parser = argparse.ArgumentParser(description="SokoPy - A Python-based Sokoban Clone")
 parser.add_argument('-l', '--lang', help="Picks language (from lang.py)", type=str, default="EN-US")
-parser.add_argument('-L', '--level', help="Loads directly into the specified level", type=str, default="data/levels/tutorial.lvl")
+parser.add_argument('-L', '--level', help="Loads directly into the specified level", type=str, default="levels/tutorial.lvl")
 args = parser.parse_args()
 
 if args.lang not in lang.languages:
@@ -48,35 +48,35 @@ resources = {
         "BigArial": pygame.font.SysFont("Arial", 64, bold=True),
     },
     "sprite": {
-        "shade":        pygame.image.load(load_file(f"data/sprites/shade.png")).convert_alpha(),
-        "shadient":     pygame.image.load(load_file(f"data/sprites/shadient.png")).convert_alpha(),
-        "vignette":     pygame.image.load(load_file(f"data/sprites/vignette.png")).convert_alpha(),
-        "gbrick":       pygame.image.load(load_file(f"data/sprites/grayFloor.png")).convert_alpha(),
-        "ggrass":       pygame.image.load(load_file(f"data/sprites/grassFloor.png")).convert_alpha(),
-        "rbrick":       pygame.image.load(load_file(f"data/sprites/redBrick.png")).convert_alpha(),
-        "rbricksheet":  pygame.image.load(load_file(f"data/sprites/redBrickSheet.png")).convert_alpha(),
-        "crate":        pygame.image.load(load_file(f"data/sprites/crateBrown.png")).convert_alpha(),
-        "cratedark":    pygame.image.load(load_file(f"data/sprites/crateBrownOnTarget.png")).convert_alpha(),
-        "target":       pygame.image.load(load_file(f"data/sprites/target.png")).convert_alpha(),
+        "shade":        pygame.image.load(load_file(f"sprites/shade.png")).convert_alpha(),
+        "shadient":     pygame.image.load(load_file(f"sprites/shadient.png")).convert_alpha(),
+        "vignette":     pygame.image.load(load_file(f"sprites/vignette.png")).convert_alpha(),
+        "gbrick":       pygame.image.load(load_file(f"sprites/grayFloor.png")).convert_alpha(),
+        "ggrass":       pygame.image.load(load_file(f"sprites/grassFloor.png")).convert_alpha(),
+        "rbrick":       pygame.image.load(load_file(f"sprites/redBrick.png")).convert_alpha(),
+        "rbricksheet":  pygame.image.load(load_file(f"sprites/redBrickSheet.png")).convert_alpha(),
+        "crate":        pygame.image.load(load_file(f"sprites/crateBrown.png")).convert_alpha(),
+        "cratedark":    pygame.image.load(load_file(f"sprites/crateBrownOnTarget.png")).convert_alpha(),
+        "target":       pygame.image.load(load_file(f"sprites/target.png")).convert_alpha(),
         # TODO: Spritesheet-ify the player please!
         "player":      [
-                            pygame.image.load(load_file(f"data/sprites/playerStill0.png")).convert_alpha(),
-                            pygame.image.load(load_file(f"data/sprites/playerStill1.png")).convert_alpha(),
-                            pygame.image.load(load_file(f"data/sprites/playerStill2.png")).convert_alpha(),
-                            pygame.image.load(load_file(f"data/sprites/playerStill3.png")).convert_alpha(),
-                            pygame.image.load(load_file(f"data/sprites/playerWalk00.png")).convert_alpha(),
-                            pygame.image.load(load_file(f"data/sprites/playerWalk10.png")).convert_alpha(),
-                            pygame.image.load(load_file(f"data/sprites/playerWalk20.png")).convert_alpha(),
-                            pygame.image.load(load_file(f"data/sprites/playerWalk30.png")).convert_alpha(),
-                            pygame.image.load(load_file(f"data/sprites/playerWalk01.png")).convert_alpha(),
-                            pygame.image.load(load_file(f"data/sprites/playerWalk11.png")).convert_alpha(),
-                            pygame.image.load(load_file(f"data/sprites/playerWalk21.png")).convert_alpha(),
-                            pygame.image.load(load_file(f"data/sprites/playerWalk31.png")).convert_alpha()
+                            pygame.image.load(load_file(f"sprites/playerStill0.png")).convert_alpha(),
+                            pygame.image.load(load_file(f"sprites/playerStill1.png")).convert_alpha(),
+                            pygame.image.load(load_file(f"sprites/playerStill2.png")).convert_alpha(),
+                            pygame.image.load(load_file(f"sprites/playerStill3.png")).convert_alpha(),
+                            pygame.image.load(load_file(f"sprites/playerWalk00.png")).convert_alpha(),
+                            pygame.image.load(load_file(f"sprites/playerWalk10.png")).convert_alpha(),
+                            pygame.image.load(load_file(f"sprites/playerWalk20.png")).convert_alpha(),
+                            pygame.image.load(load_file(f"sprites/playerWalk30.png")).convert_alpha(),
+                            pygame.image.load(load_file(f"sprites/playerWalk01.png")).convert_alpha(),
+                            pygame.image.load(load_file(f"sprites/playerWalk11.png")).convert_alpha(),
+                            pygame.image.load(load_file(f"sprites/playerWalk21.png")).convert_alpha(),
+                            pygame.image.load(load_file(f"sprites/playerWalk31.png")).convert_alpha()
                         ],
-        "lvlbutton":    pygame.image.load(load_file(f"data/sprites/levelbutton.png")).convert_alpha(),
-        "selbutton":    pygame.image.load(load_file(f"data/sprites/selectedbutton.png")).convert_alpha(),
-        "lvlcheck":     pygame.image.load(load_file(f"data/sprites/checkbox.png")).convert_alpha(),
-        "lvlchecked":   pygame.image.load(load_file(f"data/sprites/checkedbox.png")).convert_alpha(),
+        "lvlbutton":    pygame.image.load(load_file(f"sprites/levelbutton.png")).convert_alpha(),
+        "selbutton":    pygame.image.load(load_file(f"sprites/selectedbutton.png")).convert_alpha(),
+        "lvlcheck":     pygame.image.load(load_file(f"sprites/checkbox.png")).convert_alpha(),
+        "lvlchecked":   pygame.image.load(load_file(f"sprites/checkedbox.png")).convert_alpha(),
     },
     "sound": {
     },
@@ -140,7 +140,7 @@ resUpdated = False
 
 # 0: menu, 1: game
 mode = -1
-newMode = 0 if args.level == "data/levels/tutorial.lvl" else 1
+newMode = 0 if args.level == "levels/tutorial.lvl" else 1
 slides = {
     "display": [0, 0],
     "text": [0, 0],
@@ -172,7 +172,7 @@ kcd = 0
 animStage = 0
 animRate = 0
 debug_info["lvl"] = args.level
-map_content = lvl.decode_lvl("data/levels/tutorial.lvl")
+map_content = lvl.decode_lvl("levels/tutorial.lvl")
 currPos = [-1, -1]
 last_state = [map_content, currPos]
 def load_settings():
@@ -245,15 +245,15 @@ while active:
                 continue
             if event.type == pygame.VIDEORESIZE:
                 resources["sprite"]["vignette"] = \
-                    pygame.image.load(f"data/sprites/vignette.png").convert_alpha()
+                    pygame.image.load(f"sprites/vignette.png").convert_alpha()
                 resources["sprite"]["vignette"] = \
                     pygame.transform.scale(resources["sprite"]["vignette"], (event.w, event.h))
                 resources["sprite"]["shade"] = \
-                    pygame.image.load(f"data/sprites/shade.png").convert_alpha()
+                    pygame.image.load(f"sprites/shade.png").convert_alpha()
                 resources["sprite"]["shade"] = \
                     pygame.transform.scale(resources["sprite"]["shade"], (event.w, event.h))
                 resources["sprite"]["shadient"] = \
-                    pygame.image.load(f"data/sprites/shadient.png").convert_alpha()
+                    pygame.image.load(f"sprites/shadient.png").convert_alpha()
                 resources["sprite"]["shadient"] = \
                     pygame.transform.scale(resources["sprite"]["shadient"], (event.w, event.h))
                 resUpdated = True
@@ -508,8 +508,8 @@ while active:
         res = [res.current_w, res.current_h]
         if setupDone != 1:
             last_state = []
-            debug_info["lvl"] = f"data/levels/{filedir}"
-            levelset = convert.LevelSet(f"data/levels/{filedir[:filedir.index('#')]}")
+            debug_info["lvl"] = f"levels/{filedir}"
+            levelset = convert.LevelSet(f"levels/{filedir[:filedir.index('#')]}")
             map_content = lvl.Level(levelset.get_level(int(filedir[filedir.index('#')+1:])), res)
             setupDone = 1
             charSlideMod = 100
@@ -569,8 +569,8 @@ while active:
             walking = False
             menuBackLevelPack = choice(list(menu_items.keys())[1:-3])
             menuBackLevel = randint(0, lvlpack_list[menuBackLevelPack]['len']-1)
-            debug_info["lvl"] = f"data/levels/{menuBackLevelPack}#{menuBackLevel}"
-            levelset = convert.LevelSet(f"data/levels/{menuBackLevelPack}")
+            debug_info["lvl"] = f"levels/{menuBackLevelPack}#{menuBackLevel}"
+            levelset = convert.LevelSet(f"levels/{menuBackLevelPack}")
             map_content = lvl.Level(levelset.get_level(menuBackLevel), res)
             parallaxMulti = 2
             slideDiv = 25 / (settings["slide"]["value"]*2)
@@ -585,8 +585,8 @@ while active:
             if newLvlTimer > 150000:
                 menuBackLevelPack = choice(list(menu_items.keys())[1:-3])
                 menuBackLevel = randint(0, lvlpack_list[menuBackLevelPack]['len']-1)
-                debug_info["lvl"] = f"data/levels/{menuBackLevelPack}#{menuBackLevel}"
-                levelset = convert.LevelSet(f"data/levels/{menuBackLevelPack}")
+                debug_info["lvl"] = f"levels/{menuBackLevelPack}#{menuBackLevel}"
+                levelset = convert.LevelSet(f"levels/{menuBackLevelPack}")
                 map_content = lvl.Level(levelset.get_level(menuBackLevel), res)
                 newLvlTimer = -150000
                 lvlDirW = randint(-1, 1)
