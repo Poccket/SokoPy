@@ -16,7 +16,7 @@ languages = {
 		"BOX LINES",
 		"PLAYER LINES",
 		"PRESS ENTER TO RETURN TO MENU",
-		"version 2.0.0",
+		"version 2.2.0",
 		"Pick a save",
 		"To create a new save, open the settings menu",
 		"and type a new name into the Profile field"
