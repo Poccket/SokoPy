@@ -22,7 +22,7 @@ import convert
 # -- Parser startup
 parser = argparse.ArgumentParser(description="SokoPy - A Python-based Sokoban Clone")
 parser.add_argument('-l', '--lang', help="Picks language (from lang.py)", type=str, default="EN-US")
-# FIXME: parser.add_argument('-L', '--level', help="Loads directly into the specified level", type=str, default="")
+parser.add_argument('-L', '--level', help="Loads directly into the specified level", type=str, default="data/levels/tutorial.lvl")
 args = parser.parse_args()
 
 if args.lang not in lang.languages:
@@ -140,7 +140,7 @@ resUpdated = False
 
 # 0: menu, 1: game
 mode = -1
-newMode = 0
+newMode = 0 if args.level == "data/levels/tutorial.lvl" else 1
 slides = {
     "display": [0, 0],
     "text": [0, 0],
@@ -158,7 +158,7 @@ lvlIndex = 0
 lvlpack_list = lvl.get_levelpacks()
 menu_items = {"tut": lang.languages[args.lang][4]}
 menu_items.update(lvl.menu_packs(lvlpack_list))
-filedir = "tutorial.lvl#0"
+filedir = args.level
 erase = ["Erase your save", "Are you sure?", "Save erased"]
 erasing = 0
 menu_items["set"] = "Settings"
@@ -171,7 +171,7 @@ kLast = None
 kcd = 0
 animStage = 0
 animRate = 0
-debug_info["lvl"] = "data/levels/tutorial.lvl"
+debug_info["lvl"] = args.level
 map_content = lvl.decode_lvl("data/levels/tutorial.lvl")
 currPos = [-1, -1]
 last_state = [map_content, currPos]

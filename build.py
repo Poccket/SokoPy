@@ -296,7 +296,23 @@ while running:
                         menuSel = 0
                         loadLevels = True
                     elif menuSel == 3:
-                        subprocess.run(["python3", "main.py"])
+                        dirCont = os.listdir("./")
+                        argfile = meta["title"] + ".lvl#" + str(currlvl)
+                        if "SokoPy.exe" in dirCont:
+                            print(["SokoPy.exe", "--level", argfile])
+                            subprocess.run(["SokoPy.exe", "--level", argfile])
+                        elif "SokoPy" in dirCont:
+                            print(["./SokoPy", "--level", argfile])
+                            subprocess.run(["./SokoPy", "--level", argfile])
+                        elif "SokoPy.bin" in dirCont:
+                            print(["./SokoPy.bin", "--level", argfile])
+                            subprocess.run(["./SokoPy.bin", "--level", argfile])
+                        elif "main.bin" in dirCont:
+                            print(["./main.bin", "--level", argfile])
+                            subprocess.run(["./main.bin", "--level", argfile])
+                        elif "main.py" in dirCont:
+                            print(["python3", "main.py", "--level", argfile])
+                            subprocess.run(["python3", "main.py", "--level", argfile])
                     elif menuSel == 4:
                         changeTitle = True
                     elif menuSel == 5:
