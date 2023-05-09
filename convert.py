@@ -89,7 +89,7 @@ class LevelSet:
                 map_data.append([])
             elif repeat:
                 if repeatNum == 0:
-                    repeatNum = nibble
+                    repeatNum = nibble+3
                 else:
                     for i in range(0, repeatNum):
                         map_data[y].append(nibble)
@@ -106,7 +106,7 @@ class LevelSet:
                 map_data.append([])
             elif repeat:
                 if repeatNum == 0:
-                    repeatNum = nibble
+                    repeatNum = nibble+3
                 else:
                     for i in range(0, repeatNum):
                         map_data[y].append(nibble)
@@ -161,7 +161,7 @@ def write_lvl(filename: str, outdata: bytes) -> None:
     print("INFO: Wrote", len(outdata), "bytes to", filename + '.lvl')
 
 
-def textlist_to_lvlnew(lvldata: list) -> bytes:
+def textlist_to_lvlnew(lvldata: list) -> tuple:
     """
     Converts a list (each item being a line) into level data (in binary)
     """
@@ -175,7 +175,7 @@ def textlist_to_lvlnew(lvldata: list) -> bytes:
             if n == 0:
                 last_block = y
                 continue
-            if y == last_block and block_count < 15:
+            if y == last_block and block_count < 18:
                 block_count += 1
             elif block_count < 4:
                 for b in range(0, block_count):
@@ -190,7 +190,7 @@ def textlist_to_lvlnew(lvldata: list) -> bytes:
                 last_block = y
                 block_count = 1
             else:
-                if block_count > 15:
+                if block_count > 18:
                     print("Uh-oh!!")
                 if last_block == "$":
                     crate_count += block_count
@@ -199,16 +199,8 @@ def textlist_to_lvlnew(lvldata: list) -> bytes:
                 if last_block == "*":
                     crate_count += block_count
                     target_count += block_count
-                lvl_binary += "1101" + format(block_count, '04b') + Blocks[last_block]
-                #for b in range(0, block_count):
-                #    if last_block == "$":
-                #        crate_count += 1
-                #    if last_block == ".":
-                #        target_count += 1
-                #    if last_block == "*":
-                #        crate_count += 1
-                #        target_count += 1
-                #    lvl_binary += Blocks[last_block]
+                print(block_count, format(block_count, '04b'), "|", format(block_count-3, '04b'))
+                lvl_binary += "1101" + format(block_count-3, '04b') + Blocks[last_block]
                 last_block = y
                 block_count = 1
 
@@ -217,10 +209,10 @@ def textlist_to_lvlnew(lvldata: list) -> bytes:
     lvl_binary += "1111"
     if len(lvl_binary) % 8:
         lvl_binary += "0000"
-    return (lvl_binary, crate_count, target_count)
+    return lvl_binary, crate_count, target_count
 
 
-def create_packed_levelset(title: str, desc: str, filename: str, levelname = {}) -> None:
+def create_packed_levelset(title: str, desc: str, filename: str, levelname=()) -> None:
     with open(filename, "r") as f:
         data = f.readlines()
     master_record = []
