@@ -78,7 +78,6 @@ class LevelSet:
         with open(self.filename, mode='rb') as f:
             f_content = f.read()
         map_data = [[]]
-        # x = 0 ???
         y = 0
         repeat = False
         repeatNum = 0
@@ -199,7 +198,6 @@ def textlist_to_lvlnew(lvldata: list) -> tuple:
                 if last_block == "*":
                     crate_count += block_count
                     target_count += block_count
-                print(block_count, format(block_count, '04b'), "|", format(block_count-3, '04b'))
                 lvl_binary += "1101" + format(block_count-3, '04b') + Blocks[last_block]
                 last_block = y
                 block_count = 1
@@ -384,7 +382,6 @@ def create_text_levelset(filename):
         outlvl += f"; {i+1}\n\n"
         for l in filelvl:
             for c in l:
-                print(c)
                 outlvl += Blocks2[c]
             outlvl += "\n"
     with open(f"{filename[:filename.rfind('.')]}.txt", "w") as f:

@@ -85,6 +85,9 @@ debug_info = {
 }
 showDebugInfo = False
 
+picture_of_a_gun = [
+    "︻╦╤─" # I like this.
+]
 
 def debug_show():
     debug_info["fps"] = int(clock.get_fps())

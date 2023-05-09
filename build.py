@@ -182,7 +182,7 @@ PLACE = 0
 SELNUMS = [K_1, K_2, K_3, K_4, K_5]
 SELS = [" ", "@", "#", "$", "."]
 fakes = ["Return - Open Menu", "Minus/Plus - Change Size"]
-menu = ["Change Level", "Save Levels", "Load Levels", "Run SokoPy", "Change Title", "Change Description", "Exit"]
+menu = ["Change Level", "Save Levels", "Load Levels", "Run SokoPy", "Change Title", "Change Description", "Delete Level", "Exit"]
 menuOpen = False
 changeLevel = False
 menuSel = 0
@@ -292,6 +292,12 @@ while running:
                         elif menuSel == 5:
                             changeDesc = True
                         elif menuSel == 6:
+                            if len(meta["levels"]) > 1:
+                                meta["levels"].pop(currlvl)
+                                if currlvl >= len(meta["levels"])-1:
+                                    currlvl -= 1
+                                update_grid()
+                        elif menuSel == 7:
                             running = False
                         menuOpen = False
                     else:
