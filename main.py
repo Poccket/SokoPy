@@ -154,7 +154,6 @@ charSlideMod = 1
 setupDone = -2
 menuIndex = 0
 lvlIndex = 0
-
 lvlpack_list = lvl.get_levelpacks()
 menu_items = {"tut": lang.languages[args.lang][4]}
 menu_items.update(lvl.menu_packs(lvlpack_list))
@@ -184,6 +183,9 @@ def load_settings():
         "slide": {"title": "Slide Speed", "value": 1, "range": [1, 4]},
 #        "frame":  {"title": "Framerate", "value": 30, "range": [30, 200]},
         "erase": {"title": erase[erasing], "value": None, "range": [None, None]},
+        "bgcr": {"title": "Background Red", "value": 4, "range": [0, 50]},
+        "bgcg": {"title": "Background Green", "value": 4, "range": [0, 50]},
+        "bgcb": {"title": "Background Blue", "value": 10, "range": [0, 50]},
     }
     for setting in list(settings.keys()):
         if setting == "prof":
@@ -226,283 +228,277 @@ typing = False
 if len(saves) > 1:
     menuLevel = "savePicker"
 while active:
-    if focused:
-        dt = clock.tick(60) #settings["frame"]["value"])
-        seed(time.time())
-        settings["erase"]["title"] = erase[erasing]
-        kcd -= 1
-        for event in pygame.event.get():
-            if event.type == pygame.ACTIVEEVENT:
-                try:
-                    event.state
-                except AttributeError:
-                    continue
-                if event.state & 1 == 1:
-                    focused = event.gain
-            elif event.type == pygame.QUIT:
-                active = False
-            elif event.type == MOUSEBUTTONDOWN:
+    dt = clock.tick(60 if focused else 15) #settings["frame"]["value"])
+    seed(time.time())
+    settings["erase"]["title"] = erase[erasing]
+    kcd -= 1
+    for event in pygame.event.get():
+        if event.type == pygame.ACTIVEEVENT:
+            try:
+                event.state
+            except AttributeError:
                 continue
-            if event.type == pygame.VIDEORESIZE:
-                resources["sprite"]["vignette"] = \
-                    pygame.image.load(f"sprites/vignette.png").convert_alpha()
-                resources["sprite"]["vignette"] = \
-                    pygame.transform.scale(resources["sprite"]["vignette"], (event.w, event.h))
-                resources["sprite"]["shade"] = \
-                    pygame.image.load(f"sprites/shade.png").convert_alpha()
-                resources["sprite"]["shade"] = \
-                    pygame.transform.scale(resources["sprite"]["shade"], (event.w, event.h))
-                resources["sprite"]["shadient"] = \
-                    pygame.image.load(f"sprites/shadient.png").convert_alpha()
-                resources["sprite"]["shadient"] = \
-                    pygame.transform.scale(resources["sprite"]["shadient"], (event.w, event.h))
-                resUpdated = True
-            elif event.type == KEYDOWN and newMode == -1:
-                if event.key == K_BACKSLASH:
-                    showDebugInfo = not showDebugInfo
-                if mode == 0 and setupDone == 0:
-                    if typing:
-                        if event.key == K_BACKSPACE:
-                            settings["prof"]["value"] = settings["prof"]["value"][:-1]
-                        else:
-                            if event.unicode.isalnum():
-                                settings["prof"]["value"] += event.unicode
-                    if event.key == K_RETURN or event.key == K_SPACE:
-                        if menuLevel == "root":
-                            if menuIndex == 0:
-                                newMode = 1
-                                filedir = "tutorial.lvl#0"
-                            elif menuIndex < len(menu_items)-2:
-                                newMenuLevel = list(menu_items.keys())[menuIndex]
-                            elif menuIndex == len(menu_items)-2:
-                                newMenuLevel = "settings"
-                            elif menuIndex == len(menu_items)-1:
-                                active = False
-                        elif menuLevel == "savePicker":
-                            settings["prof"]["value"] = saves[menuIndex]
-                            newMenuLevel = "root"
-                        elif menuLevel == "settings":
-                            if menuIndex == len(settings.keys())-1:
-                                if erasing == 1:
-                                    erasing = 2
-                                    save.erase_save(username)
-                                    saves = save.list_saves()
-                                    if len(saves) <= 0:
-                                        settings["prof"]["value"] = "User"
-                                    else:
-                                        settings["prof"]["value"] = saves[0]
-                                    slides["shake"] = 0 # 60
-                                else:
-                                    slides["shake"] = 0 # 30
-                                    erasing = 1
-                            else:
-                                setting = list(settings.keys())[menuIndex]
-                                if settings[setting]["range"] == 'str':
-                                    typing = not typing
-                                elif settings[setting]["value"] is not None:
-                                    if isinstance(settings[setting]["value"], int):
-                                        if settings[setting]["value"] >= settings[setting]["range"][1]:
-                                            settings[setting]["value"] = settings[setting]["range"][0]
-                                        else:
-                                            settings[setting]["value"] += 1
-                                    save.add_savedata('Settings', [setting, settings[setting]["value"]],
-                                                      username, categorytype="dict")
-                        else:
+            if event.state & 2 == 2:
+                focused = event.gain
+        elif event.type == pygame.QUIT:
+            active = False
+        if event.type == pygame.VIDEORESIZE:
+            resources["sprite"]["vignette"] = \
+                pygame.image.load(f"sprites/vignette.png").convert_alpha()
+            resources["sprite"]["vignette"] = \
+                pygame.transform.scale(resources["sprite"]["vignette"], (event.w, event.h))
+            resources["sprite"]["shade"] = \
+                pygame.image.load(f"sprites/shade.png").convert_alpha()
+            resources["sprite"]["shade"] = \
+                pygame.transform.scale(resources["sprite"]["shade"], (event.w, event.h))
+            resources["sprite"]["shadient"] = \
+                pygame.image.load(f"sprites/shadient.png").convert_alpha()
+            resources["sprite"]["shadient"] = \
+                pygame.transform.scale(resources["sprite"]["shadient"], (event.w, event.h))
+            resUpdated = True
+        elif event.type == KEYDOWN and newMode == -1:
+            if event.key == K_BACKSLASH:
+                showDebugInfo = not showDebugInfo
+            if mode == 0 and setupDone == 0:
+                if typing:
+                    if event.key == K_BACKSPACE:
+                        settings["prof"]["value"] = settings["prof"]["value"][:-1]
+                    else:
+                        if event.unicode.isalnum():
+                            settings["prof"]["value"] += event.unicode
+                if event.key == K_RETURN or event.key == K_SPACE:
+                    if menuLevel == "root":
+                        if menuIndex == 0:
                             newMode = 1
-                            filedir = menuLevel + '#' + str(lvlIndex)
-                    elif event.key == K_ESCAPE and menuLevel != "root":
-                        if typing:
-                            typing = False
+                            filedir = "tutorial.lvl#0"
+                        elif menuIndex < len(menu_items)-2:
+                            newMenuLevel = list(menu_items.keys())[menuIndex]
+                        elif menuIndex == len(menu_items)-2:
+                            newMenuLevel = "settings"
+                        elif menuIndex == len(menu_items)-1:
+                            active = False
+                    elif menuLevel == "savePicker":
+                        settings["prof"]["value"] = saves[menuIndex]
                         newMenuLevel = "root"
-                        slideDiv = 25 / (settings["slide"]["value"]*2)
-                    elif not typing and event.key == K_r:
-                        if typing:
-                            typing = False
-                        setupDone = -1
-                elif mode == 1 and setupDone == 1:
-                    if event.key == K_r:
-                        newMode = 1
-                    elif event.key == K_ESCAPE:
-                        newMode = 0
-                    elif event.key == K_RETURN and winState:
-                        if menuLevel != "root" and lvlIndex < len(levelList) - 1:
-                            newMode = 1
-                            lvlIndex += 1
-                            filedir = menuLevel + '#' + str(lvlIndex)
-                    elif event.key == K_z:
-                        if len(map_content.history):
-                            map_content.rewind()
+                    elif menuLevel == "settings":
+                        if menuIndex == len(settings.keys())-1:
+                            if erasing == 1:
+                                erasing = 2
+                                save.erase_save(username)
+                                saves = save.list_saves()
+                                if len(saves) <= 0:
+                                    settings["prof"]["value"] = "User"
+                                else:
+                                    settings["prof"]["value"] = saves[0]
+                                slides["shake"] = 0 # 60
+                            else:
+                                slides["shake"] = 0 # 30
+                                erasing = 1
                         else:
-                            slides["shake"] = 5
-        keys = pygame.key.get_pressed()
-        if newMode == -1:
-            if mode == 0:
-                if keys[K_UP]:
-                    if can_press(K_UP, dt):
-                        if menuLevel in ["root", "savePicker"]:
-                            erasing = 0
-                            oldMenuIndex = menuIndex
-                            menuIndex = menuIndex-1 if menuIndex > 0 else menuMax
-                            slides["display"][0] += ((oldMenuIndex-menuIndex)*50)
-                        elif menuLevel == "settings":
-                            if typing:
-                                typing = False
-                            erasing = 0
-                            oldMenuIndex = menuIndex
-                            menuIndex = menuIndex - 1 if menuIndex > 0 else len(settings)-1
-                            slides["display"][0] += ((oldMenuIndex - menuIndex) * 50)
-                        else:
-                            if lvlIndex >= lvls_can_fit:
-                                lvlIndex -= lvls_can_fit
-                                slides["display"][0] += 160
-                elif keys[K_DOWN]:
-                    if can_press(K_DOWN, dt):
-                        if menuLevel in ["root", "savePicker"]:
-                            erasing = 0
-                            oldMenuIndex = menuIndex
-                            menuIndex = menuIndex+1 if menuIndex < menuMax else 0
-                            slides["display"][0] += (oldMenuIndex-menuIndex)*50
-                        elif menuLevel == "settings":
-                            if typing:
-                                typing = False
-                            erasing = 0
-                            oldMenuIndex = menuIndex
-                            menuIndex = menuIndex+1 if menuIndex < len(settings)-1 else 0
-                            slides["display"][0] += (oldMenuIndex-menuIndex)*50
-                        else:
-                            if lvlIndex <= menuMax-lvls_can_fit:
-                                lvlIndex += lvls_can_fit
-                                slides["display"][0] -= 160
-                elif keys[K_RIGHT]:
-                    if can_press(K_RIGHT, dt):
-                        if menuLevel == "settings":
-                            if typing:
-                                typing = False
                             setting = list(settings.keys())[menuIndex]
-                            if settings[setting]["value"] is not None:
-                                if setting == "prof":
-                                    saves = save.list_saves()
-                                    currSave = saves.index(username.lower())
-                                    if currSave == len(saves)-1:
-                                        settings[setting]["value"] = saves[0]
-                                    else:
-                                        settings[setting]["value"] = saves[currSave+1]
+                            if settings[setting]["range"] == 'str':
+                                typing = not typing
+                            elif settings[setting]["value"] is not None:
                                 if isinstance(settings[setting]["value"], int):
                                     if settings[setting]["value"] >= settings[setting]["range"][1]:
-                                        settings[setting]["value"] = settings[setting]["range"][1]
-                                    else:
-                                        settings[setting]["value"] += 1
-                                elif isinstance(settings[setting]["value"], bool):
-                                    settings[setting]["value"] = not settings[setting]["value"]
-                                save.add_savedata('Settings', [setting, settings[setting]["value"]],
-                                                  username, categorytype="dict")
-                        elif menuLevel != "root":
-                            if lvlIndex < menuMax:
-                                lvlIndex += 1
-                                if lvlIndex % lvls_can_fit == 0:
-                                    slides["display"][0] -= 160
-                elif keys[K_LEFT]:
-                    if can_press(K_LEFT, dt):
-                        if menuLevel == "settings":
-                            if typing:
-                                typing = False
-                            setting = list(settings.keys())[menuIndex]
-                            if settings[setting]["value"] is not None:
-                                if setting == "prof":
-                                    saves = save.list_saves()
-                                    currSave = saves.index(username.lower())
-                                    settings[setting]["value"] = saves[currSave-1]
-                                if isinstance(settings[setting]["value"], int):
-                                    if settings[setting]["value"] <= settings[setting]["range"][0]:
                                         settings[setting]["value"] = settings[setting]["range"][0]
                                     else:
-                                        settings[setting]["value"] -= 1
-                                elif isinstance(settings[setting]["value"], bool):
-                                    settings[setting]["value"] = not settings[setting]["value"]
+                                        settings[setting]["value"] += 1
+                                if setting[:3] == "bgc":
+                                    map_content = lvl.Level(levelset.get_level(menuBackLevel), res, bg_color=(settings["bgcr"]["value"]*5, settings["bgcg"]["value"]*5, settings["bgcb"]["value"]*5))
                                 save.add_savedata('Settings', [setting, settings[setting]["value"]],
-                                                  username, categorytype="dict")
-                        elif menuLevel != "root":
-                            if lvlIndex > 0:
-                                lvlIndex -= 1
-                                if lvlIndex % lvls_can_fit == lvls_can_fit-1:
-                                    slides["display"][0] += 160
-                else:
-                    kHoldDiv = 1
-                    kLast = None
-            if mode == 1:
-                if keys[K_UP]:
-                    if can_press(K_UP, dt):
-                        map_content.move_player([-1, 0], slides)
-                elif keys[K_DOWN]:
-                    if can_press(K_DOWN, dt):
-                        map_content.move_player([1, 0], slides)
-                elif keys[K_LEFT]:
-                    if can_press(K_LEFT, dt):
-                        map_content.move_player([0, -1], slides)
-                elif keys[K_RIGHT]:
-                    if can_press(K_RIGHT, dt):
-                        map_content.move_player([0, 1], slides)
-                else:
-                    kHoldDiv = 1
-                    kLast = None
-        settings["prof"]["value"] = settings["prof"]["value"].capitalize()
-        if not typing:
-            username = settings["prof"]["value"].lower()
-            save.init_save(username)
-            settings = load_settings()
-        if newMode != -1:
-            if slides["display"][0] < 2000:
-                slides["display"][0] += max(1+abs(slides["display"][0]/10), 1)*(dt/10)
-                slides["text"][0] += max(1+abs(slides["text"][0]/8), 1)*(dt/10)
+                                                    username, categorytype="dict")
+                    else:
+                        newMode = 1
+                        filedir = menuLevel + '#' + str(lvlIndex)
+                elif event.key == K_ESCAPE and menuLevel != "root":
+                    if typing:
+                        typing = False
+                    newMenuLevel = "root"
+                    slideDiv = 25 / (settings["slide"]["value"]*2)
+                elif not typing and event.key == K_r:
+                    if typing:
+                        typing = False
+                    setupDone = -1
+            elif mode == 1 and setupDone == 1:
+                if event.key == K_r:
+                    newMode = 1
+                elif event.key == K_ESCAPE:
+                    newMode = 0
+                elif event.key == K_RETURN and winState:
+                    if menuLevel != "root" and lvlIndex < len(levelList) - 1:
+                        newMode = 1
+                        lvlIndex += 1
+                        filedir = menuLevel + '#' + str(lvlIndex)
+                elif event.key == K_z:
+                    if len(map_content.history):
+                        map_content.rewind()
+                    else:
+                        slides["shake"] = 5
+    keys = pygame.key.get_pressed()
+    if newMode == -1:
+        if mode == 0:
+            if keys[K_UP]:
+                if can_press(K_UP, dt):
+                    if menuLevel in ["root", "savePicker"]:
+                        erasing = 0
+                        oldMenuIndex = menuIndex
+                        menuIndex = menuIndex-1 if menuIndex > 0 else menuMax
+                        slides["display"][0] += ((oldMenuIndex-menuIndex)*50)
+                    elif menuLevel == "settings":
+                        if typing:
+                            typing = False
+                        erasing = 0
+                        oldMenuIndex = menuIndex
+                        menuIndex = menuIndex - 1 if menuIndex > 0 else len(settings)-1
+                        slides["display"][0] += ((oldMenuIndex - menuIndex) * 50)
+                    else:
+                        if lvlIndex >= lvls_can_fit:
+                            lvlIndex -= lvls_can_fit
+                            slides["display"][0] += 160
+            elif keys[K_DOWN]:
+                if can_press(K_DOWN, dt):
+                    if menuLevel in ["root", "savePicker"]:
+                        erasing = 0
+                        oldMenuIndex = menuIndex
+                        menuIndex = menuIndex+1 if menuIndex < menuMax else 0
+                        slides["display"][0] += (oldMenuIndex-menuIndex)*50
+                    elif menuLevel == "settings":
+                        if typing:
+                            typing = False
+                        erasing = 0
+                        oldMenuIndex = menuIndex
+                        menuIndex = menuIndex+1 if menuIndex < len(settings)-1 else 0
+                        slides["display"][0] += (oldMenuIndex-menuIndex)*50
+                    else:
+                        if lvlIndex <= menuMax-lvls_can_fit:
+                            lvlIndex += lvls_can_fit
+                            slides["display"][0] -= 160
+            elif keys[K_RIGHT]:
+                if can_press(K_RIGHT, dt):
+                    if menuLevel == "settings":
+                        if typing:
+                            typing = False
+                        setting = list(settings.keys())[menuIndex]
+                        if settings[setting]["value"] is not None:
+                            if setting == "prof":
+                                saves = save.list_saves()
+                                currSave = saves.index(username.lower())
+                                if currSave == len(saves)-1:
+                                    settings[setting]["value"] = saves[0]
+                                else:
+                                    settings[setting]["value"] = saves[currSave+1]
+                            if isinstance(settings[setting]["value"], int):
+                                if settings[setting]["value"] >= settings[setting]["range"][1]:
+                                    settings[setting]["value"] = settings[setting]["range"][1]
+                                else:
+                                    settings[setting]["value"] += 1
+                            elif isinstance(settings[setting]["value"], bool):
+                                settings[setting]["value"] = not settings[setting]["value"]
+                            if setting[:3] == "bgc":
+                                map_content = lvl.Level(levelset.get_level(menuBackLevel), res, bg_color=(settings["bgcr"]["value"]*5, settings["bgcg"]["value"]*5, settings["bgcb"]["value"]*5))
+                            save.add_savedata('Settings', [setting, settings[setting]["value"]],
+                                                username, categorytype="dict")
+                    elif menuLevel != "root":
+                        if lvlIndex < menuMax:
+                            lvlIndex += 1
+                            if lvlIndex % lvls_can_fit == 0:
+                                slides["display"][0] -= 160
+            elif keys[K_LEFT]:
+                if can_press(K_LEFT, dt):
+                    if menuLevel == "settings":
+                        if typing:
+                            typing = False
+                        setting = list(settings.keys())[menuIndex]
+                        if settings[setting]["value"] is not None:
+                            if setting == "prof":
+                                saves = save.list_saves()
+                                currSave = saves.index(username.lower())
+                                settings[setting]["value"] = saves[currSave-1]
+                            if isinstance(settings[setting]["value"], int):
+                                if settings[setting]["value"] <= settings[setting]["range"][0]:
+                                    settings[setting]["value"] = settings[setting]["range"][0]
+                                else:
+                                    settings[setting]["value"] -= 1
+                            elif isinstance(settings[setting]["value"], bool):
+                                settings[setting]["value"] = not settings[setting]["value"]
+                            if setting[:3] == "bgc":
+                                map_content = lvl.Level(levelset.get_level(menuBackLevel), res, bg_color=(settings["bgcr"]["value"]*5, settings["bgcg"]["value"]*5, settings["bgcb"]["value"]*5))
+                            save.add_savedata('Settings', [setting, settings[setting]["value"]],
+                                                username, categorytype="dict")
+                    elif menuLevel != "root":
+                        if lvlIndex > 0:
+                            lvlIndex -= 1
+                            if lvlIndex % lvls_can_fit == lvls_can_fit-1:
+                                slides["display"][0] += 160
             else:
-                res = pygame.display.Info()
-                res = [res.current_w, res.current_h]
-                slides["trans"] = [0, res[0] * 2]
-                mode = newMode
-                newMode = -1
-                setupDone = -1
-                slides["display"][0] = -2000
-        elif newMenuLevel:
-            if slides["display"][0] < 20000:
-                slides["display"][0] += max(1+abs(slides["display"][0]/10), 1)*(dt/10)
+                kHoldDiv = 1
+                kLast = None
+        if mode == 1:
+            if keys[K_UP]:
+                if can_press(K_UP, dt):
+                    map_content.move_player([-1, 0], slides)
+            elif keys[K_DOWN]:
+                if can_press(K_DOWN, dt):
+                    map_content.move_player([1, 0], slides)
+            elif keys[K_LEFT]:
+                if can_press(K_LEFT, dt):
+                    map_content.move_player([0, -1], slides)
+            elif keys[K_RIGHT]:
+                if can_press(K_RIGHT, dt):
+                    map_content.move_player([0, 1], slides)
             else:
-                menuLevel = newMenuLevel
-                newMenuLevel = None
-                menuIndex = 0
-                slides["display"][0] = -2000
+                kHoldDiv = 1
+                kLast = None
+    settings["prof"]["value"] = settings["prof"]["value"].capitalize()
+    if not typing:
+        username = settings["prof"]["value"].lower()
+        save.init_save(username)
+        settings = load_settings()
+    if newMode != -1:
+        if slides["display"][0] < 2000:
+            slides["display"][0] += max(1+abs(slides["display"][0]/10), 1)*(dt/10)
+            slides["text"][0] += max(1+abs(slides["text"][0]/8), 1)*(dt/10)
         else:
-            for vector in list(slides.keys()):
-                if vector == "shake":
-                    if slides["shake"]:
-                        slides["shake"] -= 1
-                        slides["display"][0] += randint(round(-(settings["shake"]["value"]*10)*(slides["shake"] / 10)),
-                                                        round((settings["shake"]["value"]*10)*(slides["shake"] / 10)))
-                        slides["display"][1] += randint(round(-(settings["shake"]["value"]*10)*(slides["shake"] / 10)),
-                                                        round((settings["shake"]["value"]*10)*(slides["shake"] / 10)))
-                    continue
-                if slides[vector][0] < 0:
-                    slides[vector][0] = min(slides[vector][0] - (slides[vector][0] / (slideDiv*(dt/20))), -0.04)
-                elif slides[vector][0]:
-                    slides[vector][0] = max(slides[vector][0] - (slides[vector][0] / (slideDiv*(dt/20))), 0.04)
-                if slides[vector][1] < 0:
-                    slides[vector][1] = min(slides[vector][1] - (slides[vector][1] / (slideDiv*(dt/20))), -0.04)
-                elif slides[vector][1]:
-                    slides[vector][1] = max(slides[vector][1] - (slides[vector][1] / (slideDiv*(dt/20))), 0.04)
-                slides[vector][0] = round(slides[vector][0], 1)
-                slides[vector][1] = round(slides[vector][1], 1)
+            res = pygame.display.Info()
+            res = [res.current_w, res.current_h]
+            slides["trans"] = [0, res[0] * 2]
+            mode = newMode
+            newMode = -1
+            setupDone = -1
+            slides["display"][0] = -2000
+    elif newMenuLevel:
+        if slides["display"][0] < 20000:
+            slides["display"][0] += max(1+abs(slides["display"][0]/10), 1)*(dt/10)
+        else:
+            menuLevel = newMenuLevel
+            newMenuLevel = None
+            menuIndex = 0
+            slides["display"][0] = -2000
     else:
-        dt = clock.tick(20)
-        for event in pygame.event.get():
-            if event.type == pygame.ACTIVEEVENT:
-                try:
-                    event.state
-                except AttributeError:
-                    continue
-                if event.state & 1 == 1:
-                    focused = event.gain
-            elif event.type == pygame.QUIT:
-                active = False
-    screen.fill((10, 10, 32))
+        for vector in list(slides.keys()):
+            if vector == "shake":
+                if slides["shake"]:
+                    slides["shake"] -= 1
+                    slides["display"][0] += randint(round(-(settings["shake"]["value"]*10)*(slides["shake"] / 10)),
+                                                    round((settings["shake"]["value"]*10)*(slides["shake"] / 10)))
+                    slides["display"][1] += randint(round(-(settings["shake"]["value"]*10)*(slides["shake"] / 10)),
+                                                    round((settings["shake"]["value"]*10)*(slides["shake"] / 10)))
+                continue
+            if slides[vector][0] < 0:
+                slides[vector][0] = min(slides[vector][0] - (slides[vector][0] / (slideDiv*(dt/20))), -0.04)
+            elif slides[vector][0]:
+                slides[vector][0] = max(slides[vector][0] - (slides[vector][0] / (slideDiv*(dt/20))), 0.04)
+            if slides[vector][1] < 0:
+                slides[vector][1] = min(slides[vector][1] - (slides[vector][1] / (slideDiv*(dt/20))), -0.04)
+            elif slides[vector][1]:
+                slides[vector][1] = max(slides[vector][1] - (slides[vector][1] / (slideDiv*(dt/20))), 0.04)
+            slides[vector][0] = round(slides[vector][0], 1)
+            slides[vector][1] = round(slides[vector][1], 1)
+    screen.fill((settings["bgcr"]["value"]*5, settings["bgcg"]["value"]*5, settings["bgcb"]["value"]*5))
+    screen.blit(resources["sprite"]["shade"], (0, 0))
+    text_color = (192, 192, 255)
+    dark_color = (128, 128, 196)
     if mode == 1:
         res = pygame.display.Info()
         res = [res.current_w, res.current_h]
@@ -510,7 +506,7 @@ while active:
             last_state = []
             debug_info["lvl"] = f"levels/{filedir}"
             levelset = convert.LevelSet(f"levels/{filedir[:filedir.index('#')]}")
-            map_content = lvl.Level(levelset.get_level(int(filedir[filedir.index('#')+1:])), res)
+            map_content = lvl.Level(levelset.get_level(int(filedir[filedir.index('#')+1:])), res, bg_color=(settings["bgcr"]["value"]*5, settings["bgcg"]["value"]*5, settings["bgcb"]["value"]*5))
             setupDone = 1
             charSlideMod = 100
             slides["character"][0] = 3000
@@ -526,8 +522,7 @@ while active:
             if newMode != -1:
                 charSlideMod = 1
             else:
-                targets_left = map_content.check_win()
-                winState = targets_left == 0
+                winState = map_content.check_win()
                 if winState and winText:
                     slides["text"][0] = -2000
                     winText = False
@@ -549,13 +544,22 @@ while active:
                 save.add_savedata('Completed', [levelTitle], username)
                 if lvlIndex < len(levelList) - 1:
                     nextLevelLine = True
-                    draw_text("Arial", "Press RETURN to play the next level", (192, 192, 255),
-                              ((res[0] / 2) - slides["text"][1], (res[1] / 2) - slides["text"][0]), center=True,
+                    draw_text("Arial", "Press RETURN to play the next level", text_color,
+                              ((res[0] / 2) - slides["text"][1], (res[1] / 2) + 50 - slides["text"][0]), center=True,
                               shadow=True)
-            draw_text("BigArial", "You Won!", (192, 192, 255),
-                      ((res[0]/2)-slides["text"][1], ((res[1]/2)-80)-slides["text"][0]), center=True, shadow=True)
-            draw_text("Arial", "Press R to restart, Press ESC to leave", (192, 192, 255), ((res[0]/2)-slides["text"][1],
-                      ((res[1]/2)+(50*nextLevelLine))-slides["text"][0]), center=True, shadow=True)
+            draw_text("BigArial", "You Won!", text_color,
+                      ((res[0]/2)-slides["text"][1], ((res[1]/2)-120)-slides["text"][0]), center=True, shadow=True)
+            draw_text("Arial", f"{map_content.stats['crate moves']} pushes, {map_content.stats['player moves']} moves", text_color, ((res[0]/2)-slides["text"][1],
+                      ((res[1]/2)-50)-slides["text"][0]), center=True, shadow=True)
+            draw_text("Arial", f"{map_content.stats['crate lines']} push lines, {map_content.stats['player lines']} move lines", text_color, ((res[0]/2)-slides["text"][1],
+                      ((res[1]/2))-slides["text"][0]), center=True, shadow=True)
+            draw_text("Arial", "Press R to restart, Press ESC to leave", text_color, ((res[0]/2)-slides["text"][1],
+                      ((res[1]/2)+50+(50*nextLevelLine))-slides["text"][0]), center=True, shadow=True)
+        else:
+            draw_text("Arial",f"{map_content.stats['crate moves']} pushes, {map_content.stats['player moves']} moves",
+            text_color, (10, res[1]-80), shadow=True)
+            draw_text("Arial",f"{map_content.stats['crate lines']} push lines, {map_content.stats['player lines']} move lines",
+            text_color, (10, res[1]-40), shadow=True)
     elif mode == 0:
         if setupDone != 0:
             titleRainbow = [255, 192, 192]
@@ -571,7 +575,7 @@ while active:
             menuBackLevel = randint(0, lvlpack_list[menuBackLevelPack]['len']-1)
             debug_info["lvl"] = f"levels/{menuBackLevelPack}#{menuBackLevel}"
             levelset = convert.LevelSet(f"levels/{menuBackLevelPack}")
-            map_content = lvl.Level(levelset.get_level(menuBackLevel), res)
+            map_content = lvl.Level(levelset.get_level(menuBackLevel), res, bg_color=(settings["bgcr"]["value"]*5, settings["bgcg"]["value"]*5, settings["bgcb"]["value"]*5))
             parallaxMulti = 2
             slideDiv = 25 / (settings["slide"]["value"]*2)
         elif resUpdated:
@@ -587,7 +591,7 @@ while active:
                 menuBackLevel = randint(0, lvlpack_list[menuBackLevelPack]['len']-1)
                 debug_info["lvl"] = f"levels/{menuBackLevelPack}#{menuBackLevel}"
                 levelset = convert.LevelSet(f"levels/{menuBackLevelPack}")
-                map_content = lvl.Level(levelset.get_level(menuBackLevel), res)
+                map_content = lvl.Level(levelset.get_level(menuBackLevel), res, bg_color=(settings["bgcr"]["value"]*5, settings["bgcg"]["value"]*5, settings["bgcb"]["value"]*5) )
                 newLvlTimer = -150000
                 lvlDirW = randint(-1, 1)
                 lvlDirH = randint(-1, 1)
@@ -595,12 +599,12 @@ while active:
             menuMax = len(menu_items)-1
             lvlModH = menuIndex + ((newLvlTimer / 1500) * lvlDirH)
             lvlModW = (newLvlTimer / 1200) * lvlDirW
-            map_content.render(res, slides, screen, resources, tiles, dt, mod=lvlModH, modw=lvlModW, parallax=3, player=False, modsize=50)
+            map_content.render(res, slides, screen, resources, tiles, dt, mod=lvlModH, modw=lvlModW, parallax=3, player=False, modsize=50, after_shade=True)
             screen.blit(resources["sprite"]["shade"], (0, 0))
             biggestItem = 0
             for i, item in enumerate(menu_items.values()):
                 itemSize = draw_text("Arial", item[:item.index("(")] if "(" in item else item,
-                                     titleRainbow if i == menuIndex else (128, 128, 196),
+                                     titleRainbow if i == menuIndex else dark_color,
                                      ((50-slides["display"][1])+(slides["trans"][1]*(i+1)),
                                       240+((50*(i-menuIndex))-slides["display"][0])),
                                      shadow=True)
@@ -640,9 +644,9 @@ while active:
                                    (20-slides["display"][1], 90+((50*(-menuIndex))-slides["display"][0])), shadow=True)
             screen.blit(resources["sprite"]["player"][2], (128-slides["display"][1],
                                                            90+((50*(-menuIndex))-slides["display"][0])))
-            draw_text("Arial", lang.languages[args.lang][16], (128, 128, 196),
+            draw_text("Arial", lang.languages[args.lang][16], dark_color,
                       (45+titleWidth-slides["display"][1], 120+((50*(-menuIndex))-slides["display"][0])), shadow=True)
-            draw_text("Arial", lang.languages[args.lang][2], (128, 128, 196),
+            draw_text("Arial", lang.languages[args.lang][2], dark_color,
                       (40-slides["display"][1], 150+((50*(-menuIndex))-slides["display"][0])), shadow=True)
         elif menuLevel == "settings":
             lvlIndex = 0
@@ -652,7 +656,7 @@ while active:
             screen.blit(resources["sprite"]["shade"], (0, 0))
             for i, item in enumerate(settings.values()):
                 draw_text("Arial", item["title"],
-                          (192, 192, 255) if i == menuIndex else (128, 128, 196),
+                          text_color if i == menuIndex else dark_color,
                           (50-slides["display"][1], 240+((50*(i-menuIndex))-slides["display"][0])), shadow=True)
                 if item["value"] is not None:
                     if item["range"] == [0, 1]:
@@ -660,32 +664,32 @@ while active:
                     else:
                         settingVal = item["value"]
                     draw_text("Arial", str(settingVal),
-                              (192, 192, 255) if i == menuIndex else (128, 128, 196),
+                              text_color if i == menuIndex else dark_color,
                               (500-slides["display"][1], 240+((50*(i-menuIndex))-slides["display"][0])), shadow=True)
-            titleWidth = draw_text("BigArial", lang.languages[args.lang][0], (192, 192, 255),
+            titleWidth = draw_text("BigArial", lang.languages[args.lang][0], text_color,
                                    (20-slides["display"][1], 90+((50*(-menuIndex))-slides["display"][0])), shadow=True)
             screen.blit(resources["sprite"]["player"][2], (128-slides["display"][1],
                                                            90+((50*(-menuIndex))-slides["display"][0])))
-            draw_text("Arial", lang.languages[args.lang][16], (128, 128, 196),
+            draw_text("Arial", lang.languages[args.lang][16], dark_color,
                       (45+titleWidth-slides["display"][1], 120+((50*(-menuIndex))-slides["display"][0])), shadow=True)
-            draw_text("Arial", lang.languages[args.lang][2], (128, 128, 196),
+            draw_text("Arial", lang.languages[args.lang][2], dark_color,
                       (40-slides["display"][1], 150+((50*(-menuIndex))-slides["display"][0])), shadow=True)
         elif menuLevel == "savePicker":
             lvlIndex = 0
             menuMax = len(saves)-1
             for i, item in enumerate(saves):
                 itemSize = draw_text("Arial", item.capitalize(),
-                                     (192, 192, 255) if i == menuIndex else (128, 128, 196),
+                                     text_color if i == menuIndex else dark_color,
                                      ((50-slides["display"][1])+(slides["trans"][1]*(i+1)/2),
                                       240+((50*(i-menuIndex))-slides["display"][0])),
                                      shadow=True)
                 screen.blit(resources["sprite"]["player"][2], (((-10)-slides["display"][1])+(slides["trans"][1]*(i+1)/2),
                  220+((50*(i-menuIndex))-slides["display"][0])))
-            titleWidth = draw_text("BigArial", lang.languages[args.lang][17], (192, 192, 255),
+            titleWidth = draw_text("BigArial", lang.languages[args.lang][17], text_color,
                                    (20-slides["display"][1], 90+((50*(-menuIndex))-slides["display"][0])), shadow=True)
-            draw_text("Arial", lang.languages[args.lang][18], (128, 128, 196),
+            draw_text("Arial", lang.languages[args.lang][18], dark_color,
                       (40-slides["display"][1], 150+((50*(-menuIndex))-slides["display"][0])), shadow=True)
-            draw_text("Arial", lang.languages[args.lang][19], (128, 128, 196),
+            draw_text("Arial", lang.languages[args.lang][19], dark_color,
                       (40-slides["display"][1], 190+((50*(-menuIndex))-slides["display"][0])), shadow=True)
         else:
             titles = lvlpack_list[menuLevel]['title'].partition('(')
@@ -699,13 +703,13 @@ while active:
                 if i == lvlIndex:
                     screen.blit(resources["sprite"]["selbutton"],
                                 (15+(160*(i % lvls_can_fit))-slides["display"][1], 250-((lvlIndex//lvls_can_fit)*160)-slides["display"][0]+(160*(i//lvls_can_fit))))
-                    draw_text("BigArial", str(i+1), (192, 192, 255),
+                    draw_text("BigArial", str(i+1), text_color,
                               (50+(160*(i % lvls_can_fit))-slides["display"][1],
                                290-((lvlIndex//lvls_can_fit)*160)-slides["display"][0]+(160*(i//lvls_can_fit))), shadow=True, center=True)
                 else:
                     screen.blit(resources["sprite"]["lvlbutton"],
                                 (15+(160*(i % lvls_can_fit))-slides["display"][1], 250-((lvlIndex// lvls_can_fit)*160)-slides["display"][0]+(160*(i// lvls_can_fit))))
-                    draw_text("BigArial", str(i+1), (128, 128, 196),
+                    draw_text("BigArial", str(i+1), dark_color,
                               (50+(160*(i % lvls_can_fit))-slides["display"][1],
                                290-((lvlIndex// lvls_can_fit)*160)-slides["display"][0]+(160*(i// lvls_can_fit))), shadow=True, center=True)
                 if save.check_savedata('Completed', menuLevel + '#' + str(i), username):
@@ -716,13 +720,13 @@ while active:
                     screen.blit(resources["sprite"]["lvlcheck"],
                                 (80 + (160 * (i % lvls_can_fit)) - slides["display"][1],
                                  300 - ((lvlIndex // lvls_can_fit) * 160) - slides["display"][0] + (160 * (i // lvls_can_fit))))
-            titleWidth = draw_text("BigArial", titles[0], (192, 192, 255),
+            titleWidth = draw_text("BigArial", titles[0], text_color,
                                    (20-slides["display"][1],
                                     90+((160*(-(lvlIndex // lvls_can_fit)))-slides["display"][0])), shadow=True)
-            draw_text("Arial", titles[2][:-1], (128, 128, 196),
+            draw_text("Arial", titles[2][:-1], dark_color,
                       (35+titleWidth-slides["display"][1],
                        120+((160*(-(lvlIndex // lvls_can_fit)))-slides["display"][0])), shadow=True)
-            draw_text("Arial", lvlpack_list[menuLevel]['desc'], (128, 128, 196),
+            draw_text("Arial", lvlpack_list[menuLevel]['desc'], dark_color,
                       (40-slides["display"][1],
                        150+((160*(-(lvlIndex // lvls_can_fit)))-slides["display"][0])), shadow=True)
     if showDebugInfo:

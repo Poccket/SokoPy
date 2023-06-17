@@ -15,9 +15,10 @@ import json
 #     #      ##
 #     #     ##
 #     #######
-# into the binary level format I made.
+# into a custom binary levelpack format.
 
 
+# TODO: Reorganize!
 Blocks = {
     "!": "0000",  # New line
     " ": "0010",  # Empty
@@ -30,8 +31,6 @@ Blocks = {
     #     1101      Next nibble is number of times to repeat the nibble after.
     #     1111      End Of Level Data
 }
-
-
 Blocks2 = [
     "!", "!", " ", "@",
     "#", "$", ".", "*",
@@ -163,10 +162,13 @@ def write_lvl(filename: str, outdata: bytes) -> None:
 def textlist_to_lvlnew(lvldata: list) -> tuple:
     """
     Converts a list (each item being a line) into level data (in binary)
+    This is currently nonfunctional
     """
+    print("Function is currently broken!")
     lvl_binary = ""
     crate_count = 0
     target_count = 0
+    player_pos = [-1, -1]
     for x in lvldata:
         last_block = None
         block_count = 1
@@ -174,6 +176,8 @@ def textlist_to_lvlnew(lvldata: list) -> tuple:
             if n == 0:
                 last_block = y
                 continue
+            if last_block in ["$", ".", "*", "+"]:
+                return
             if y == last_block and block_count < 18:
                 block_count += 1
             elif block_count < 4:

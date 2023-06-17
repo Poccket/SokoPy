@@ -1,23 +1,12 @@
 import os
 import json
-from math import floor
+from math import floor, ceil
 from random import randint, seed
 from copy import deepcopy
 from pygame import surface
 import pygame
 import convert
 
-# blocks:
-# new line      , empty space  , walkable  , player
-# wall          , movable crate, crate goal, crate on goal
-# player on goal, undefined    , undefined , undefined
-# undefined     , undefined    , undefined , undefined
-visTable = ["\n", "  ", "  ", "=)",
-            "▓▒", "▓█", "╳╳", "▓█",
-            "  ", "  ", "  ", "  ",
-            "  ", "  ", "  ", "  "]
-visHeight = 1
-visWidth = 2
 # index 0: canClip
 #   1 = player can stand here
 #   0 = player cannot stand here
@@ -100,7 +89,8 @@ def calc_place(modifier, large, modpos, resolution):
 
 
 class Level:
-    def __init__(self, level, screen_dimensions: list[int]):
+    def __init__(self, level, screen_dimensions: list[int], bg_color=(31, 31, 31)):
+        self.background_color = bg_color
         self.data = level
         self.precalculated_connections = pre_calc_connections(self.data)
         self.dimensions = {
@@ -125,6 +115,16 @@ class Level:
             "height": int(screen_dimensions[1]/128) + 1,
             "width": int(screen_dimensions[0]/128) + 1,
         }
+        self.stats = {
+            "crate moves": 0,
+            "player moves": 0,
+            "crate lines": 0,
+            "player lines": 0
+        }
+        self.statsMeta = {
+            "crate line": False,
+            "player last direction": None
+        }
         self.shakeDelay = 2
         for x, row in enumerate(self.data):
             for y, col in enumerate(row):
@@ -145,6 +145,7 @@ class Level:
         }
         self.background = None
         self.inside = None
+        self.isWon = False
 
     def update_res(self, screen_dimensions) -> None:
         self.large = {
@@ -171,11 +172,14 @@ class Level:
         self.history += [{
             "data": deepcopy(self.data),
             "player": deepcopy(self.player),
+            "stats": [deepcopy(self.stats), deepcopy(self.statsMeta)],
         }]
 
     def rewind(self) -> None:
-        self.data = self.history[-1]["data"]
-        self.player = self.history[-1]["player"]
+        self.data       = self.history[-1]["data"]
+        self.player     = self.history[-1]["player"]
+        self.stats      = self.history[-1]["stats"][0]
+        self.statsMeta  = self.history[-1]["stats"][1]
         self.history.pop(-1)
 
     def check_win(self) -> int:
@@ -184,7 +188,9 @@ class Level:
             for y in x:
                 if y == 5:
                     targets += 1
-        return targets
+        if targets == 0:
+            self.isWon = True
+        return self.isWon
 
     def move_player(self, direction: list[int], slides):
         self.player[2] = (0 if direction[0] == -1 else 2) if direction[0] else (3 if direction[1] == -1 else 1)
@@ -201,6 +207,13 @@ class Level:
                 slides["display"][1] -= 64*direction[1]
             else:
                 slides["character"][1] += 64*direction[1]
+            if not self.isWon:
+                if self.statsMeta["player last direction"] != direction:
+                    self.stats["player lines"] += 1
+                self.stats["player moves"] += 1
+                self.statsMeta["player last direction"] = direction
+                self.statsMeta["crate line"] = False
+            return
         elif atrTable[self.data[self.player[0] + direction[0]][self.player[1] + direction[1]]][1] == "1":
             if atrTable[self.data[self.player[0] + (direction[0]*2)][self.player[1] + (direction[1]*2)]][0] == "1":
                 self.shakeDelay = 2
@@ -226,6 +239,16 @@ class Level:
                     slides["display"][1] -= 64*direction[1]
                 else:
                     slides["character"][1] += 64*direction[1]
+                if not self.isWon:
+                    if self.statsMeta["player last direction"] != direction:
+                        self.stats["player lines"] += 1
+                    self.stats["player moves"] += 1
+                    if not self.statsMeta["crate line"] or self.statsMeta["player last direction"] != direction:
+                        self.stats["crate lines"] += 1
+                        self.statsMeta["crate line"] = True
+                    self.stats["crate moves"] += 1
+                    self.statsMeta["player last direction"] = direction
+                return
             else:
                 if self.shakeDelay == 0:
                     slides["shake"] = 3
@@ -236,9 +259,10 @@ class Level:
                 slides["shake"] = 3
             else:
                 self.shakeDelay -= 1
+        return
 
     def render(self, screen_dimensions: list[int], slides: dict, screen, resources, tiles,
-               dt, mod=0, modw=0, parallax=1, player=True, modsize=0):  # TODO: Too many goddamn variables
+               dt, mod=0, modw=0, parallax=1, player=True, modsize=0, after_shade=False):  # TODO: Too many goddamn variables
         if not self.background:
             if not self.inside:
                 self.inside = []
@@ -285,7 +309,13 @@ class Level:
                                         self.inside[x + 1][y] = -2
                                 self.inside[x][y] = -1
             self.background = surface.Surface(((self.dimensions["width"]*64)+1536, (self.dimensions["height"]*64)+1536))
-            self.background.fill((10, 10, 32))
+            self.background.fill(self.background_color)
+            shade_size = resources["sprite"]["shade"].get_size()
+            back_size = self.background.get_size()
+            if not after_shade:
+                for x in range(0, ceil(back_size[0]/shade_size[0])):
+                    for y in range(0, ceil(back_size[1]/shade_size[1])):
+                        self.background.blit(resources["sprite"]["shade"], (x*shade_size[0], y*shade_size[1]))
             for x in range(-12, self.dimensions["height"]+12):
                 for y in range(-12, self.dimensions["width"]+12):
                     seed(sum(self.data[0]) + sum(self.data[-1]) + x + y)
