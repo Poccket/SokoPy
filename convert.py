@@ -21,7 +21,7 @@ VERSION = "1.1"
 
 
 # TODO: Reorganize!
-Blocks = {
+BLOCKS_TO_NIBBLE = {
     "!": "0000",  # New line
     " ": "0010",  # Empty
     "@": "0011",  # Player
@@ -33,7 +33,7 @@ Blocks = {
     #     1101      Next nibble is number of times to repeat the nibble after.
     #     1111      End Of Level Data
 }
-Blocks2 = [
+NUM_TO_BLOCKS = [
     "!", "!", " ", "@",
     "#", "$", ".", "*",
     "+"
@@ -41,6 +41,9 @@ Blocks2 = [
 
 
 def bytes_to_bitstring(b: bytes, n=None) -> str:
+    """
+    Converts bytes into a string representation.
+    """
     # https://stackoverflow.com/questions/60579197/python-bytes-to-bit-string
     s = ''.join(f'{x:08b}' for x in b) # Fucking Black Magic
     return s if n is None else s[:n + n // 8 + (0 if n % 8 else -1)]
@@ -57,7 +60,8 @@ def bitstring_to_bytes(s: str) -> bytes:
         v >>= 8
     return bytes(b[::-1])
 
-
+# TODO: Combine LevelSet UnpackedSet
+# Referenced in build.py and main.py
 class LevelSet:
     def __init__(self, filename: str) -> None:
         self.filename = filename
@@ -147,22 +151,32 @@ class LevelSet:
                 for i, r in enumerate(lvl_data):
                     lvl_list += [[]]
                     for c in r:
-                        lvl_list[i] += [Blocks2[c]]
+                        lvl_list[i] += [NUM_TO_BLOCKS[c]]
             output += [lvl_list]
         return output
 
 
 class UnpackedSet:
-    def __init__(self, title: str, desc: str, year = datetime.now().year, author = "Unknown", level_data=None, format=None) -> None:
+    """
+    This class represents a collection of metadata, and various states of\n
+    level data.
+    It stores an uncompressed version, a text version, a compressed version,\n
+    and a binary version of the level data for this set.
+    It can also create a text file or binary file for the levelset.
+    """
+    def __init__(self, title: str, desc: str, year = datetime.now().year,
+                 author = "Unknown", level_data=None, data_format=None) -> None:
+        if level_data and not data_format:
+            raise TypeError("A data_format must be designated if the level_data is defined.")
         self.title = title
         self.desc = desc
         self.year = year
         self.author = author
         self.level_data = {
-            "uncompressed": level_data if format == "uncompressed" else None,
-            "compressed": level_data if format == "compressed" else None
+            "uncompressed": level_data if data_format == "uncompressed" else None,
+            "compressed": level_data if data_format == "compressed" else None
         }
-        if format == "text":
+        if data_format == "text":
             self.level_data["uncompressed"] = self.process_text(level_data)
         self.last_update = {
             "uncompressed": datetime.now(),
@@ -172,6 +186,11 @@ class UnpackedSet:
         self.text = None
 
     def process_text(self, text) -> list:
+        """
+        Processes a text representation of level data (typically from a text\n
+        file or user input) into a list of levels in text format (referred to\n
+        as uncompressed level data)
+        """
         all_levels = []
         level_data = []
         for line in text:
@@ -187,12 +206,17 @@ class UnpackedSet:
         return all_levels
 
     def decompress_data(self) -> None:
-        if self.level_data["uncompressed"] in [None, []] or self.last_update["uncompressed"] < self.last_update["compressed"]:
+        """
+        Processes the compressed level data into a list of levels in text\n
+        format (referred to as uncompressed level data)
+        """
+        if (self.level_data["uncompressed"] in [None, []] or
+            self.last_update["uncompressed"]<self.last_update["compressed"]):
             print("INFO: Decompressing levelset...")
             self.level_data["uncompressed"] = []
             repeating = 0
             repeat_count = 0
-            for level_number, level in enumerate(self.level_data["compressed"]):
+            for level in enumerate(self.level_data["compressed"]):
                 text_level = [""]
                 for offset in range(0, len(level), 4):
                     nibble = int(level[offset:offset+4], 2)
@@ -200,28 +224,34 @@ class UnpackedSet:
                         if repeating == 2:
                             repeat_count = nibble
                         else:
-                            text_level[-1] += Blocks2[nibble] * (repeat_count+3)
+                            text_level[-1] += NUM_TO_BLOCKS[nibble] * (repeat_count+3)
                         repeating -= 1
                     else:
                         if nibble == 15:
                             if text_level[-1] == "":
                                 del text_level[-1]
                             self.level_data["uncompressed"] += [text_level]
-                            break
                         elif nibble == 0:
                             text_level += [""]
                         elif nibble == 13:
                             repeating = 2
                         else:
                             try:
-                                text_level[-1] += Blocks2[nibble]
+                                text_level[-1] += NUM_TO_BLOCKS[nibble]
                             except IndexError:
                                 print(nibble, "Oops!")
                                 sys.exit()
             self.last_update["uncompressed"] = datetime.now()
 
     def compress_data(self) -> None:
-        if self.level_data["compressed"] is None or self.last_update["compressed"] < self.last_update["uncompressed"]:
+        """
+        Processes the uncompressed level data into a list of strings\n
+        representing byte data (referred to as compressed level data)
+        """
+        # TODO: Clean up this code, the nesting is way too deep.
+        # Legacy code! Touch this at your own peril.
+        if (self.level_data["compressed"] in [None, []] or
+            self.last_update["compressed"]<self.last_update["uncompressed"]):
             print("INFO: Compressing levelset...")
             self.level_data["compressed"] = []
             for level_number, level in enumerate(self.level_data["uncompressed"]):
@@ -246,7 +276,7 @@ class UnpackedSet:
                                 if last_block == "*":
                                     crate_count += 1
                                     target_count += 1
-                                lvl_binary += Blocks[last_block]
+                                lvl_binary += BLOCKS_TO_NIBBLE[last_block]
                             last_block = y
                             block_count = 1
                         else:
@@ -259,7 +289,7 @@ class UnpackedSet:
                             if last_block == "*":
                                 crate_count += block_count
                                 target_count += block_count
-                            lvl_binary += "1101" + format(block_count-3, '04b') + Blocks[last_block]
+                            lvl_binary += "1101" + format(block_count-3, '04b') + BLOCKS_TO_NIBBLE[last_block]
                             last_block = y
                             block_count = 1
 
@@ -279,6 +309,10 @@ class UnpackedSet:
             self.last_update["compressed"] = datetime.now()
 
     def create_text(self):
+        """
+        Creates a text file representation of the uncompressed level data, for\n
+        human readability.
+        """
         self.decompress_data()
         self.text = ""
         for level_number, level in enumerate(self.level_data["uncompressed"]):
@@ -287,6 +321,10 @@ class UnpackedSet:
                 self.text += line + "\n"
 
     def create_binary(self):
+        """
+        Combines metadata and compressed level data to create the binary\n
+        representation of the levelset.
+        """
         self.compress_data()
         master_record = []
         level_data = ""
@@ -307,17 +345,10 @@ class UnpackedSet:
         bitstring += level_data
         self.binary = bitstring_to_bytes(bitstring)
 
-    def write_binary(self, filename: str, output_folder="./") -> bool:
-        self.create_binary()
-        if os.path.isfile(filename + ".lvl"):
-            os.rename(filename + ".lvl", filename + ".old.lvl")
-            print(f"Old version backed up! Renamed to {filename + '.old.lvl'}")
-        with open(output_folder + filename + '.lvl', "w+b") as outfile:
-            outfile.write(self.binary)
-        print("INFO: Wrote", len(self.binary), "bytes to", filename + '.lvl')
-        return True
-    
     def write_text(self, filename: str, output_folder="./") -> bool:
+        """
+        Creates a text file from the level data.
+        """
         self.create_text()
         if os.path.isfile(filename + ".txt"):
             os.rename(filename + ".txt", filename + ".old.txt")
@@ -326,6 +357,20 @@ class UnpackedSet:
             outfile.write(self.text)
         print(f"INFO: Created text file {filename[:filename.rfind('.')]}.txt")
         return True
+
+    def write_binary(self, filename: str, output_folder="./") -> bool:
+        """
+        Creates a binary file from the level data.
+        """
+        self.create_binary()
+        if os.path.isfile(filename + ".lvl"):
+            os.rename(filename + ".lvl", filename + ".old.lvl")
+            print(f"Old version backed up! Renamed to {filename + '.old.lvl'}")
+        with open(output_folder + filename + '.lvl', "w+b") as outfile:
+            outfile.write(self.binary)
+        print("INFO: Wrote", len(self.binary), "bytes to", filename + '.lvl')
+        return True
+
 
 def write_lvl(filename: str, outdata: bytes, output_folder="levels/") -> None:
     """
@@ -361,7 +406,7 @@ def textlist_to_lvlnew(lvldata: list) -> tuple:
                     if last_block == "*":
                         crate_count += 1
                         target_count += 1
-                    lvl_binary += Blocks[last_block]
+                    lvl_binary += BLOCKS_TO_NIBBLE[last_block]
                 last_block = y
                 block_count = 1
             else:
@@ -374,7 +419,7 @@ def textlist_to_lvlnew(lvldata: list) -> tuple:
                 if last_block == "*":
                     crate_count += block_count
                     target_count += block_count
-                lvl_binary += "1101" + format(block_count-3, '04b') + Blocks[last_block]
+                lvl_binary += "1101" + format(block_count-3, '04b') + BLOCKS_TO_NIBBLE[last_block]
                 last_block = y
                 block_count = 1
 
@@ -386,7 +431,7 @@ def textlist_to_lvlnew(lvldata: list) -> tuple:
     return lvl_binary, crate_count, target_count
 
 # Referenced in build.py
-def create_packed_levelset(title: str, desc: str, filename: str, levelname=()) -> None:
+def create_packed_levelset(title: str, desc: str, filename: str) -> None:
     print(filename)
     with open(filename, "r") as f:
         data = f.readlines()
@@ -565,7 +610,7 @@ def create_text_levelset(filename):
         outlvl += f"; {i+1}\n\n"
         for l in filelvl:
             for c in l:
-                outlvl += Blocks2[c]
+                outlvl += NUM_TO_BLOCKS[c]
             outlvl += "\n"
     with open(f"{filename[:filename.rfind('.')]}.txt", "w") as file_content:
         file_content.write(outlvl)
@@ -589,7 +634,7 @@ def recompress(filename):
     print(f"INFO: Finished recompression of {filename}")
 
 
-# TODO: Make it so this script produces one file that is a levelpack, metadata included if possible
+# TODO: Make a nicer interface for the script.
 if __name__ == "__main__":
     print("This tool is currently being reworked! Please download an older stable version.")
     sys.exit()
