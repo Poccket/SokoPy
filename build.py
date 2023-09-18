@@ -1,15 +1,16 @@
-import pygame
-import convert
-import level
 import os
 import subprocess
 from copy import deepcopy
 from pygame.locals import (
     K_s, K_w, K_a, K_d,
-    K_1, K_2, K_3, K_4, K_5, K_6, K_7, K_8, K_9, K_0,
+    K_1, K_2, K_3, K_4, K_5, # K_6, K_7, K_8, K_9, K_0,
     K_MINUS, K_PLUS, K_EQUALS, K_RETURN, K_BACKSPACE,
     K_UP, K_DOWN, K_LEFT, K_RIGHT, K_ESCAPE
 )
+import pygame
+import convert
+import level
+
 
 BlockSprites = {
     "!": None,         # New line
@@ -51,15 +52,16 @@ pygame.display.set_caption("SokoPy Builder")
 clock = pygame.time.Clock()
 
 def load_file(filename: str) -> str:
+    "Loads a file"
     return os.path.join(os.path.dirname(__file__), filename)
 
 resources = {
     "sprite": {
-        "player":       pygame.image.load(load_file(f"sprites/playerStill2.png")).convert_alpha(),
-        "rbrick":       pygame.image.load(load_file(f"sprites/redBrick.png")).convert_alpha(),
-        "crate":        pygame.image.load(load_file(f"sprites/crateBrown.png")).convert_alpha(),
-        "cratedark":    pygame.image.load(load_file(f"sprites/crateBrownOnTarget.png")).convert_alpha(),
-        "target":       pygame.image.load(load_file(f"sprites/target.png")).convert_alpha(),
+        "player":       pygame.image.load(load_file("sprites/playerStill2.png")).convert_alpha(),
+        "rbrick":       pygame.image.load(load_file("sprites/redBrick.png")).convert_alpha(),
+        "crate":        pygame.image.load(load_file("sprites/crateBrown.png")).convert_alpha(),
+        "cratedark":    pygame.image.load(load_file("sprites/crateBrownOnTarget.png")).convert_alpha(),
+        "target":       pygame.image.load(load_file("sprites/target.png")).convert_alpha(),
     },
 }
 
@@ -303,19 +305,19 @@ while running:
                         argfile = meta["title"] + ".lvl#" + str(currlvl)
                         if "SokoPy.exe" in dirCont:
                             print(["SokoPy.exe", "--level", argfile])
-                            subprocess.run(["SokoPy.exe", "--level", argfile])
+                            subprocess.run(["SokoPy.exe", "--level", argfile], check=True)
                         elif "SokoPy" in dirCont:
                             print(["./SokoPy", "--level", argfile])
-                            subprocess.run(["./SokoPy", "--level", argfile])
+                            subprocess.run(["./SokoPy", "--level", argfile], check=True)
                         elif "SokoPy.bin" in dirCont:
                             print(["./SokoPy.bin", "--level", argfile])
-                            subprocess.run(["./SokoPy.bin", "--level", argfile])
+                            subprocess.run(["./SokoPy.bin", "--level", argfile], check=True)
                         elif "main.bin" in dirCont:
                             print(["./main.bin", "--level", argfile])
-                            subprocess.run(["./main.bin", "--level", argfile])
+                            subprocess.run(["./main.bin", "--level", argfile], check=True)
                         elif "main.py" in dirCont:
                             print(["python3", "main.py", "--level", argfile])
-                            subprocess.run(["python3", "main.py", "--level", argfile])
+                            subprocess.run(["python3", "main.py", "--level", argfile], check=True)
                     elif menuSel == 4:
                         changeTitle = True
                     elif menuSel == 5:
