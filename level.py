@@ -1,10 +1,8 @@
 import os
-import json
 from math import floor, ceil
-from random import randint, seed
+from random import randint, seed, choice
 from copy import deepcopy
 from pygame import surface
-import pygame
 import convert
 
 # index 0: canClip
@@ -19,37 +17,42 @@ atrTable = ["00", "00", "10", "10",
             "00", "00", "00", "00", ]
 
 
-# We offloaded this to the convert script but I'd like to leave it here just in case
-def decode_lvl(filename: str):
-    with open(filename, mode='rb') as f:
-        f_content = f.read()
-    map_data = [[]]
-    y = 0
-    for index in range(len(f_content)):
-        f_byte = "{:08b}".format(f_content[index])
-        if (nibble := int(f_byte[:4], 2)) == 00:
-            y += 1
-            map_data.append([])
-        else:
-            map_data[y].append(nibble)
-        if (nibble := int(f_byte[4:], 2)) == 00:
-            y += 1
-            map_data.append([])
-        else:
-            map_data[y].append(nibble)
-    return map_data
-
-
-def get_levelpacks():
+def get_levelpacks(directory="./levels"):
     levelpack_list = {}
-    for filename in os.listdir("./levels/"):
+    for filename in os.listdir(directory):
         if filename == "tutorial.lvl":
             continue
-        f = os.path.join("./levels/", filename)
-        if os.path.isfile(f):
-            if meta := convert.unpack_levelset(f):
-                levelpack_list[filename] = {"title": meta['title'], "desc": meta['desc'], "len": meta['length']}
-    return levelpack_list
+        f = os.path.join(directory, filename)
+        if os.path.isdir(f):
+            levelpack_list[filename] = {
+                "title": filename, "desc": "FOLDER",
+                "contents": get_levelpacks(directory=os.path.join(directory, filename))}
+        elif os.path.isfile(f):
+            if levelpack := convert.LevelSet(f, "file"):
+                levelpack_list[filename] = {"title": levelpack.meta['title'], "desc": levelpack.meta['description'], "len": len(levelpack)}
+    return dict(sorted(levelpack_list.items()))
+
+
+def get_random_levelpack(lvlpack_list):
+    possible = choice(list(lvlpack_list.keys()))
+    if lvlpack_list[possible]['desc'] == "FOLDER":
+        return possible + "/" + get_random_levelpack(lvlpack_list[possible]["contents"])
+    return possible
+
+
+def recursive_folder_check(lvlpack_dict, compact_key):
+    """Bad coding practices made this function necessary."""
+    if "/" in compact_key:
+        return recursive_folder_check(lvlpack_dict[compact_key[:compact_key.index("/")]]["contents"], compact_key[compact_key.index("/")+1:])
+    else:
+        return lvlpack_dict[compact_key]['desc'] == "FOLDER"
+
+
+def recursive_level_collector(lvlpack_dict, compact_key):
+    if "/" in compact_key:
+        return recursive_level_collector(lvlpack_dict[compact_key[:compact_key.index("/")]]["contents"], compact_key[compact_key.index("/")+1:])
+    else:
+        return lvlpack_dict[compact_key]
 
 
 def menu_packs(lvlpack_list):
@@ -126,6 +129,7 @@ class Level:
             "player last direction": None
         }
         self.shakeDelay = 2
+        self.player = [0, 0]
         for x, row in enumerate(self.data):
             for y, col in enumerate(row):
                 if col == 3:

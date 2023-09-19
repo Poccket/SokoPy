@@ -2,6 +2,7 @@
 import argparse
 import time
 import os
+import pprint
 # -- Limited default imports
 from contextlib import redirect_stdout
 from random import randint, seed, choice
@@ -9,7 +10,7 @@ from random import randint, seed, choice
 with redirect_stdout(None):  # This stops pygame from printing the stupid import message
     import pygame
 from pygame.locals import (
-    K_SPACE, K_ESCAPE, K_RETURN, KEYDOWN, MOUSEBUTTONDOWN,
+    K_SPACE, K_ESCAPE, K_RETURN, KEYDOWN,
     K_BACKSLASH, K_BACKSPACE, K_UP, K_DOWN, K_LEFT, K_RIGHT, K_r, K_z
 )
 # -- Local imports
@@ -157,6 +158,7 @@ lvlIndex = 0
 lvlpack_list = lvl.get_levelpacks()
 menu_items = {"tut": lang.languages[args.lang][4]}
 menu_items.update(lvl.menu_packs(lvlpack_list))
+folder_contents = []
 filedir = args.level
 erase = ["Erase your save", "Are you sure?", "Save erased"]
 erasing = 0
@@ -171,7 +173,7 @@ kcd = 0
 animStage = 0
 animRate = 0
 debug_info["lvl"] = args.level
-map_content = lvl.decode_lvl("levels/tutorial.lvl")
+map_content = None
 currPos = [-1, -1]
 last_state = [map_content, currPos]
 def load_settings():
@@ -305,9 +307,14 @@ while active:
                                     else:
                                         settings[setting]["value"] += 1
                                 if setting[:3] == "bgc":
-                                    map_content = lvl.Level(levelset.get_level(menuBackLevel), res, bg_color=(settings["bgcr"]["value"]*5, settings["bgcg"]["value"]*5, settings["bgcb"]["value"]*5))
+                                    map_content = lvl.Level(levelset.level_data["game"](menuBackLevel), res, bg_color=(settings["bgcr"]["value"]*5, settings["bgcg"]["value"]*5, settings["bgcb"]["value"]*5))
                                 save.add_savedata('Settings', [setting, settings[setting]["value"]],
                                                     username, categorytype="dict")
+                    elif lvl.recursive_folder_check(lvlpack_list, menuLevel):
+                        if menuIndex == 0:
+                            newMenuLevel = "root"
+                        else:
+                            newMenuLevel = menuLevel + "/" + list(folder_contents.keys())[menuIndex]
                     else:
                         newMode = 1
                         filedir = menuLevel + '#' + str(lvlIndex)
@@ -340,7 +347,7 @@ while active:
         if mode == 0:
             if keys[K_UP]:
                 if can_press(K_UP, dt):
-                    if menuLevel in ["root", "savePicker"]:
+                    if menuLevel in ["root", "savePicker"] or lvl.recursive_folder_check(lvlpack_list, menuLevel):
                         erasing = 0
                         oldMenuIndex = menuIndex
                         menuIndex = menuIndex-1 if menuIndex > 0 else menuMax
@@ -358,7 +365,7 @@ while active:
                             slides["display"][0] += 160
             elif keys[K_DOWN]:
                 if can_press(K_DOWN, dt):
-                    if menuLevel in ["root", "savePicker"]:
+                    if menuLevel in ["root", "savePicker"] or lvl.recursive_folder_check(lvlpack_list, menuLevel):
                         erasing = 0
                         oldMenuIndex = menuIndex
                         menuIndex = menuIndex+1 if menuIndex < menuMax else 0
@@ -396,7 +403,7 @@ while active:
                             elif isinstance(settings[setting]["value"], bool):
                                 settings[setting]["value"] = not settings[setting]["value"]
                             if setting[:3] == "bgc":
-                                map_content = lvl.Level(levelset.get_level(menuBackLevel), res, bg_color=(settings["bgcr"]["value"]*5, settings["bgcg"]["value"]*5, settings["bgcb"]["value"]*5))
+                                map_content = lvl.Level(levelset.level_data["game"](menuBackLevel), res, bg_color=(settings["bgcr"]["value"]*5, settings["bgcg"]["value"]*5, settings["bgcb"]["value"]*5))
                             save.add_savedata('Settings', [setting, settings[setting]["value"]],
                                                 username, categorytype="dict")
                     elif menuLevel != "root":
@@ -423,7 +430,7 @@ while active:
                             elif isinstance(settings[setting]["value"], bool):
                                 settings[setting]["value"] = not settings[setting]["value"]
                             if setting[:3] == "bgc":
-                                map_content = lvl.Level(levelset.get_level(menuBackLevel), res, bg_color=(settings["bgcr"]["value"]*5, settings["bgcg"]["value"]*5, settings["bgcb"]["value"]*5))
+                                map_content = lvl.Level(levelset.level_data["game"](menuBackLevel), res, bg_color=(settings["bgcr"]["value"]*5, settings["bgcg"]["value"]*5, settings["bgcb"]["value"]*5))
                             save.add_savedata('Settings', [setting, settings[setting]["value"]],
                                                 username, categorytype="dict")
                     elif menuLevel != "root":
@@ -505,8 +512,8 @@ while active:
         if setupDone != 1:
             last_state = []
             debug_info["lvl"] = f"levels/{filedir}"
-            levelset = convert.LevelSet(f"levels/{filedir[:filedir.index('#')]}")
-            map_content = lvl.Level(levelset.get_level(int(filedir[filedir.index('#')+1:])), res, bg_color=(settings["bgcr"]["value"]*5, settings["bgcg"]["value"]*5, settings["bgcb"]["value"]*5))
+            levelset = convert.LevelSet(f"levels/{filedir[:filedir.index('#')]}", "file")
+            map_content = lvl.Level(levelset.level_data["game"][int(filedir[filedir.index('#')+1:])], res, bg_color=(settings["bgcr"]["value"]*5, settings["bgcg"]["value"]*5, settings["bgcb"]["value"]*5))
             setupDone = 1
             charSlideMod = 100
             slides["character"][0] = 3000
@@ -561,6 +568,7 @@ while active:
             draw_text("Arial",f"{map_content.stats['crate lines']} push lines, {map_content.stats['player lines']} move lines",
             text_color, (10, res[1]-40), shadow=True)
     elif mode == 0:
+        newLvlTimer = 0
         if setupDone != 0:
             titleRainbow = [255, 192, 192]
             newLvlTimer = -10000
@@ -571,11 +579,11 @@ while active:
             setupDone = 0
             newMenuLevel = None
             walking = False
-            menuBackLevelPack = choice(list(menu_items.keys())[1:-3])
-            menuBackLevel = randint(0, lvlpack_list[menuBackLevelPack]['len']-1)
-            debug_info["lvl"] = f"levels/{menuBackLevelPack}#{menuBackLevel}"
-            levelset = convert.LevelSet(f"levels/{menuBackLevelPack}")
-            map_content = lvl.Level(levelset.get_level(menuBackLevel), res, bg_color=(settings["bgcr"]["value"]*5, settings["bgcg"]["value"]*5, settings["bgcb"]["value"]*5))
+            menuBackLevelPack = "./levels/" + lvl.get_random_levelpack(lvlpack_list)
+            levelset = convert.LevelSet(menuBackLevelPack, "file")
+            menuBackLevel = randint(0, len(levelset)-1)
+            debug_info["lvl"] = f"{menuBackLevelPack}#{menuBackLevel}"
+            map_content = lvl.Level(levelset.level_data["game"][menuBackLevel], res, bg_color=(settings["bgcr"]["value"]*5, settings["bgcg"]["value"]*5, settings["bgcb"]["value"]*5))
             parallaxMulti = 2
             slideDiv = 25 / (settings["slide"]["value"]*2)
         elif resUpdated:
@@ -587,11 +595,11 @@ while active:
             newLvlTimer += dt*max(abs(newLvlTimer)/5000, 2)
             newLvlTimer = round(newLvlTimer)
             if newLvlTimer > 150000:
-                menuBackLevelPack = choice(list(menu_items.keys())[1:-3])
-                menuBackLevel = randint(0, lvlpack_list[menuBackLevelPack]['len']-1)
+                menuBackLevelPack = "./levels/" + lvl.get_random_levelpack(lvlpack_list)
+                levelset = convert.LevelSet(menuBackLevelPack, "file")
+                menuBackLevel = randint(0, len(levelset)-1)
                 debug_info["lvl"] = f"levels/{menuBackLevelPack}#{menuBackLevel}"
-                levelset = convert.LevelSet(f"levels/{menuBackLevelPack}")
-                map_content = lvl.Level(levelset.get_level(menuBackLevel), res, bg_color=(settings["bgcr"]["value"]*5, settings["bgcg"]["value"]*5, settings["bgcb"]["value"]*5) )
+                map_content = lvl.Level(levelset.level_data["game"][menuBackLevel], res, bg_color=(settings["bgcr"]["value"]*5, settings["bgcg"]["value"]*5, settings["bgcb"]["value"]*5) )
                 newLvlTimer = -150000
                 lvlDirW = randint(-1, 1)
                 lvlDirH = randint(-1, 1)
@@ -691,9 +699,79 @@ while active:
                       (40-slides["display"][1], 150+((50*(-menuIndex))-slides["display"][0])), shadow=True)
             draw_text("Arial", lang.languages[args.lang][19], dark_color,
                       (40-slides["display"][1], 190+((50*(-menuIndex))-slides["display"][0])), shadow=True)
+        elif lvl.recursive_folder_check(lvlpack_list, menuLevel):
+            folder_contents = {"back": {"title": "Back to the Menu"}}
+            folder_contents.update(lvl.recursive_level_collector(lvlpack_list, menuLevel)["contents"])
+            menuMax = len(folder_contents)-1
+            newLvlTimer += dt*max(abs(newLvlTimer)/5000, 2)
+            newLvlTimer = round(newLvlTimer)
+            if newLvlTimer > 150000:
+                menuBackLevelPack = "./levels/" + lvl.get_random_levelpack(lvlpack_list)
+                levelset = convert.LevelSet(menuBackLevelPack, "file")
+                menuBackLevel = randint(0, len(levelset)-1)
+                debug_info["lvl"] = f"levels/{menuBackLevelPack}#{menuBackLevel}"
+                map_content = lvl.Level(levelset.level_data["game"][menuBackLevel], res, bg_color=(settings["bgcr"]["value"]*5, settings["bgcg"]["value"]*5, settings["bgcb"]["value"]*5) )
+                newLvlTimer = -150000
+                lvlDirW = randint(-1, 1)
+                lvlDirH = randint(-1, 1)
+            lvlIndex = 0
+            lvlModH = menuIndex + ((newLvlTimer / 1500) * lvlDirH)
+            lvlModW = (newLvlTimer / 1200) * lvlDirW
+            map_content.render(res, slides, screen, resources, tiles, dt, mod=lvlModH, modw=lvlModW, parallax=3, player=False, modsize=50, after_shade=True)
+            screen.blit(resources["sprite"]["shade"], (0, 0))
+            biggestItem = 0
+            for i, item in enumerate(folder_contents.values()):
+                item = item["title"]
+                itemSize = draw_text("Arial", item[:item.index("(")] if "(" in item else item,
+                                     titleRainbow if i == menuIndex else dark_color,
+                                     ((50-slides["display"][1])+(slides["trans"][1]*(i+1)),
+                                      240+((50*(i-menuIndex))-slides["display"][0])),
+                                     shadow=True)
+                if itemSize > biggestItem:
+                    biggestItem = itemSize
+            for i, item in enumerate(folder_contents.values()):
+                item = item["title"]
+                if "(" in item:
+                    if i == menuIndex:
+                        extraRainbow = [titleRainbow[0]-64, titleRainbow[1]-64, titleRainbow[2]-64]
+                    draw_text("Arial", item[item.index("("):],
+                              extraRainbow if i == menuIndex else (96, 96, 128),
+                              ((biggestItem+100-slides["display"][1])+(slides["trans"][1]*(i+1)),
+                               240+((50*(i-menuIndex))-slides["display"][0])),
+                              shadow=True, center=False)
+            if titleRainbow[0] >= 255:
+                if titleRainbow[2] > 160:
+                    titleRainbow[2] -= 1
+                else:
+                    titleRainbow[1] += 1
+                    if titleRainbow[1] >= 255:
+                        titleRainbow[0] -= 1
+            elif titleRainbow[1] >= 255:
+                if titleRainbow[0] > 160:
+                    titleRainbow[0] -= 1
+                else:
+                    titleRainbow[2] += 1
+                    if titleRainbow[2] >= 255:
+                        titleRainbow[1] -= 1
+            elif titleRainbow[2] >= 255:
+                if titleRainbow[1] > 160:
+                    titleRainbow[1] -= 1
+                else:
+                    titleRainbow[0] += 1
+                    if titleRainbow[0] >= 255:
+                        titleRainbow[2] -= 1
+            titleWidth = draw_text("BigArial", lang.languages[args.lang][0], titleRainbow,
+                                   (20-slides["display"][1], 90+((50*(-menuIndex))-slides["display"][0])), shadow=True)
+            screen.blit(resources["sprite"]["player"][2], (128-slides["display"][1],
+                                                           90+((50*(-menuIndex))-slides["display"][0])))
+            draw_text("Arial", lang.languages[args.lang][16], dark_color,
+                      (45+titleWidth-slides["display"][1], 120+((50*(-menuIndex))-slides["display"][0])), shadow=True)
+            draw_text("Arial", lang.languages[args.lang][2], dark_color,
+                      (40-slides["display"][1], 150+((50*(-menuIndex))-slides["display"][0])), shadow=True)
         else:
-            titles = lvlpack_list[menuLevel]['title'].partition('(')
-            levelList = list(range(lvlpack_list[menuLevel]['len']))
+            level_data = lvl.recursive_level_collector(lvlpack_list, menuLevel)
+            titles = level_data['title'].partition('(')
+            levelList = list(range(level_data['len']))
             menuMax = len(levelList)-1
             lvlIndex = max(0, min(menuMax, lvlIndex))
             lvls_can_fit = int(res[0]/165)
@@ -726,7 +804,7 @@ while active:
             draw_text("Arial", titles[2][:-1], dark_color,
                       (35+titleWidth-slides["display"][1],
                        120+((160*(-(lvlIndex // lvls_can_fit)))-slides["display"][0])), shadow=True)
-            draw_text("Arial", lvlpack_list[menuLevel]['desc'], dark_color,
+            draw_text("Arial", level_data['desc'], dark_color,
                       (40-slides["display"][1],
                        150+((160*(-(lvlIndex // lvls_can_fit)))-slides["display"][0])), shadow=True)
     if showDebugInfo:

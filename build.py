@@ -118,11 +118,16 @@ for s in resources["sprite"].keys():
 
 
 def load_save(filename):
-    fileset = convert.LevelSet(f"levels/{filename}")
+    fileset = convert.LevelSet(f"levels/Custom Levels/{filename}", "file")
     global meta
-    meta["title"] = fileset.title
-    meta["description"] = fileset.description
-    filetxt = fileset.get_levels_as_text()
+    meta["title"] = fileset.meta["title"]
+    meta["description"] = fileset.meta["description"]
+    print(meta)
+    fileset.decompress_data()
+    filetxt = fileset.level_data["uncompressed"]
+    for x, lvl in enumerate(filetxt):
+        for y, line in enumerate(lvl):
+            filetxt[x][y] = list(line)
     meta["levels"] = []
     for lvl in filetxt:
         size = len(lvl)
@@ -163,7 +168,8 @@ def commit_save():
             f.write(f"; {index+1}\n\n")
             for row in lvl:
                 f.write(f"{row}\n")
-    convert.create_packed_levelset(meta["title"], meta["description"], "temp.txt")
+    temp_lvl = convert.LevelSet("temp.txt", "file", meta["title"], meta["description"])
+    temp_lvl.write_binary("temp", output_folder="levels/Custom Levels")
     os.remove("temp.txt")
 
 
@@ -202,7 +208,7 @@ largestMenu = 0
 largestTool = 0
 CURRSEL = 3
 PLAYER = None
-lvlfiles = list(level.get_levelpacks().keys())
+lvlfiles = list(level.get_levelpacks(directory="levels/Custom Levels/").keys())
 lvlfiles.sort()
 loadLevels = False
 changeTitle = False
@@ -383,10 +389,7 @@ while running:
                         changeDesc = False
                     else:
                         tempDesc += event.unicode
-
             else:
-                tempTitle = meta["title"]
-                tempDesc = meta["description"]
                 if event.key in SELNUMS:
                     CURRSEL = SELNUMS.index(event.key)
                 elif event.key in [K_PLUS, K_EQUALS]:
@@ -646,6 +649,10 @@ while running:
     fancy_square(0, height - 24, width, 24, 56)
     offset = 0
     toolLengths = []
+    if not changeTitle:
+        tempTitle = meta["title"]
+    if not changeDesc:
+        tempDesc = meta["description"]
     for i, s in enumerate(tools):
         col = 72 if (i == 0 and menuOpen) or mLight == i else 56
         w = text_len(s, 16) + 18
