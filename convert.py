@@ -369,7 +369,7 @@ class LevelSet:
                 print(f"Old version backed up! Renamed to {filename + '.lvl.old'}")
         with open(output_folder + filename + ".txt", "w") as outfile:
             outfile.write(self.level_data["text"])
-        print(f"INFO: Created text file {filename[:filename.rfind('.')]}.txt")
+        print(f"INFO: Created text file {filename[:filename.index('.')]}.txt")
         return True
 
     def write_binary(self, filename: str, output_folder="./", overwrite_policy=0) -> bool:
@@ -438,3 +438,6 @@ if __name__ == "__main__":
         tempLevelSet.meta["year"] = args.year if args.year else datetime.now().year
         tempLevelSet.meta["author"] = args.author if args.author else "Unknown Author"
         tempLevelSet.write_binary(args.filename[:args.filename.index(".")])
+    elif args.act == "decompile":
+        tempLevelSet = LevelSet(args.filename, "file")
+        tempLevelSet.write_text(args.filename[:args.filename.index(".")])
