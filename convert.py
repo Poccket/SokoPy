@@ -1,9 +1,8 @@
 import sys
 import os
-import json
 from datetime import datetime
 
-VERSION = "1.1"
+VERSION = "2.0"
 # This file can be used to convert sokoban levels in a format like below:
 #    ; Level 1
 #       ###
@@ -20,7 +19,6 @@ VERSION = "1.1"
 # into a custom binary levelpack format.
 
 
-# TODO: Reorganize!
 BLOCKS_TO_NIBBLE = {
     "!": "0000",  # New line
     " ": "0010",  # Empty
@@ -91,7 +89,7 @@ class LevelSet:
         }
         if data_format == "file":
             if level_data[-4:] == ".txt":
-                with open(level_data, "r") as file:
+                with open(level_data, "r", encoding="utf-8") as file:
                     self.level_data["text"] = file.read().splitlines()
                     self.process_text()
             elif level_data[-4:] == ".lvl":
@@ -358,30 +356,36 @@ class LevelSet:
             raise Exception("Something went wrong! File size is abnormally small.")
         print(f"INFO: Finished compressing at {len(self.level_data['binary'])} bytes")
 
-    def write_text(self, filename: str, output_folder="./") -> bool:
+    def write_text(self, filename: str, output_folder="./", overwrite_policy=0) -> bool:
         """
         Creates a text file from the level data.
         """
         self.create_text()
         if os.path.isfile(filename + ".txt"):
-            os.rename(filename + ".txt", filename + ".old.txt")
-            print(f"Old version backed up! Renamed to {filename + '.lvl.old'}")
+            if overwrite_policy == 0:
+                raise OSError("File already exists!")
+            elif overwrite_policy == 1:
+                os.rename(filename + ".txt", filename + ".old.txt")
+                print(f"Old version backed up! Renamed to {filename + '.lvl.old'}")
         with open(output_folder + filename + ".txt", "w") as outfile:
             outfile.write(self.level_data["text"])
         print(f"INFO: Created text file {filename[:filename.rfind('.')]}.txt")
         return True
 
-    def write_binary(self, filename: str, output_folder="./") -> bool:
+    def write_binary(self, filename: str, output_folder="./", overwrite_policy=0) -> bool:
         """
         Creates a binary file from the level data.
         """
         self.create_binary()
         if os.path.isfile(filename + ".lvl"):
-            os.rename(filename + ".lvl", filename + ".old.lvl")
-            print(f"Old version backed up! Renamed to {filename + '.old.lvl'}")
+            if overwrite_policy == 0:
+                raise OSError("File already exists!")
+            elif overwrite_policy == 1:
+                os.rename(filename + ".lvl", filename + ".old.lvl")
+                print(f"Old version backed up! Renamed to {filename + '.old.lvl'}")
         with open(output_folder + filename + '.lvl', "w+b") as outfile:
             outfile.write(self.level_data["binary"])
-        #print("INFO: Wrote", len(self.level_data["binary"]), "bytes to", filename + '.lvl')
+        print("INFO: Wrote", len(self.level_data["binary"]), "bytes to", filename + '.lvl')
         return True
 
     def create_game_data(self) -> None:
@@ -404,11 +408,33 @@ class LevelSet:
 
 # TODO: Make a nicer interface for the script.
 if __name__ == "__main__":
-    print("This tool is currently being reworked! Please download an older stable version.")
-    sys.exit()
-    HAS_EXECUTABLE = int(sys.argv[0][:6] == "python")
-    if len(sys.argv) == 1+HAS_EXECUTABLE:
-        print(f"SokoPy conversion script v{VERSION} by @Poccket")
-    elif len(sys.argv) < 3+HAS_EXECUTABLE:
-        print("Please give a file to convert\n\
-               Like so: python3 convert.py recompress example.txt")
+    import argparse
+    print(f"SokoPy conversion script v{VERSION} by @Poccket")
+    parser = argparse.ArgumentParser(
+        prog='convert.py',
+        epilog="See '<command> --help' to read about a specific sub-command."
+    )
+    base_parser = argparse.ArgumentParser(add_help=False)
+    base_parser.add_argument("filename", help="source file")
+
+    subparsers = parser.add_subparsers(dest='act', help='sub-commands')
+    base_parser.add_argument('-f', '--force', action='store_true', help="force overwriting")
+    base_parser.add_argument('-v', '--verbose', action='store_true')
+
+    A_parser = subparsers.add_parser('compile', help='compiles text', parents=[base_parser])
+    A_parser.add_argument('-t', '--title', required=True, help="title of levelset, required")
+    A_parser.add_argument('-d', '--desc', required=False, help="description of levelset, optional")
+    A_parser.add_argument('-y', '--year', required=False, help="year of release, optional")
+    A_parser.add_argument('-a', '--author', required=False, help="author of levelset, optional")
+    A_parser.add_argument('-o', '--output', required=False)
+
+    B_parser = subparsers.add_parser('decompile', help='decompiles binary', parents=[base_parser])
+    B_parser.add_argument('-o', '--output', required=False)
+    args = parser.parse_args()
+    if args.act == "compile":
+        tempLevelSet = LevelSet(args.filename, "file")
+        tempLevelSet.meta["title"] = args.title
+        tempLevelSet.meta["description"] = args.desc if args.desc else "No description."
+        tempLevelSet.meta["year"] = args.year if args.year else datetime.now().year
+        tempLevelSet.meta["author"] = args.author if args.author else "Unknown Author"
+        tempLevelSet.write_binary(args.filename[:args.filename.index(".")])
