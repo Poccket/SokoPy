@@ -69,7 +69,8 @@ class LevelSet:
     """
     def __init__(self, level_data=None, data_format=None, title="Unknown",
                  desc="Unknown", year = datetime.now().year,
-                 author = "Unknown", length = 0) -> None:
+                 author = "Unknown", length = 0, verbose=False) -> None:
+        self.verbose = verbose
         if level_data and not data_format:
             raise TypeError("A data_format must be designated if the level_data is defined.")
         self.meta = {
@@ -136,7 +137,8 @@ class LevelSet:
         """
         if not self.level_data["binary"] in [None, []]:
             # Metadata retrieval
-            #print("INFO: Unzipping data...")
+            if self.verbose:
+                print("INFO: Unzipping data...")
             self.level_offsets = []
             if self.level_data["binary"][:4] != b"SKBN":
                 raise ValueError("File is not a level file!")
@@ -177,7 +179,8 @@ class LevelSet:
                 if offset > record_end:
                     break
             # Process the binary data back into compressed data.
-            #print("INFO: Getting levels...")
+            if self.verbose:
+                print("INFO: Getting levels...")
             level_data = ''
             self.level_data["compressed"] = []
             for byte in self.level_data["binary"][record_end:]:
@@ -197,7 +200,8 @@ class LevelSet:
         as uncompressed level data)
         """
         if not self.level_data["text"] in [None, []]:
-            #print("INFO: Processing text...")
+            if self.verbose:
+                print("INFO: Processing text...")
             self.level_data["uncompressed"] = []
             level_data = []
             for line in self.level_data["text"]:
@@ -218,7 +222,8 @@ class LevelSet:
         """
         if (self.level_data["uncompressed"] in [None, []] or
             self.last_update["uncompressed"]<self.last_update["compressed"]):
-            #print("INFO: Decompressing levelset...")
+            if self.verbose:
+                print("INFO: Decompressing levelset...")
             self.level_data["uncompressed"] = []
             repeating = 0
             repeat_count = 0
@@ -258,7 +263,8 @@ class LevelSet:
         # Legacy code! Touch this at your own peril.
         if (self.level_data["compressed"] in [None, []] or
             self.last_update["compressed"]<self.last_update["uncompressed"]):
-            #print("INFO: Compressing levelset...")
+            if self.verbose:
+                print("INFO: Compressing levelset...")
             self.level_data["compressed"] = []
             for level_number, level in enumerate(self.level_data["uncompressed"]):
                 lvl_binary = ""
@@ -310,7 +316,8 @@ class LevelSet:
                         f"   {crate_count} crates seen, but {target_count} targets seen.\n",
                         "Press ENTER to continue, CTRL+C to quit execution")
                     input()
-                print(f"INFO: Level {level_number} finished at {len(lvl_binary)/8} bytes")
+                if self.verbose:
+                    print(f"INFO: Level {level_number} finished at {len(lvl_binary)/8} bytes")
                 self.level_data["compressed"] += [lvl_binary]
             self.last_update["compressed"] = datetime.utcnow().timestamp()
 
@@ -319,7 +326,8 @@ class LevelSet:
         Creates a text file representation of the uncompressed level data, for\n
         human readability.
         """
-        #print("INFO: Creating text...")
+        if self.verbose:
+            print("INFO: Creating text...")
         self.decompress_data()
         self.level_data["text"] = ""
         for level_number, level in enumerate(self.level_data["uncompressed"]):
@@ -332,7 +340,8 @@ class LevelSet:
         Combines metadata and compressed level data to create the binary\n
         representation of the levelset.
         """
-        #print("INFO: Compressing data...")
+        if self.verbose:
+            print("INFO: Compressing data...")
         self.compress_data()
         master_record = []
         level_data = ""
@@ -354,38 +363,43 @@ class LevelSet:
         self.level_data["binary"] = bitstring_to_bytes(bitstring)
         if len(self.level_data["binary"]) < 4:
             raise Exception("Something went wrong! File size is abnormally small.")
-        print(f"INFO: Finished compressing at {len(self.level_data['binary'])} bytes")
+        if self.verbose:
+            print(f"INFO: Finished compressing at {len(self.level_data['binary'])} bytes")
 
-    def write_text(self, filename: str, output_folder="./", overwrite_policy=0) -> bool:
+    def write_text(self, filename: str, output_folder="./", overwrite_policy=0, prefix=True) -> bool:
         """
         Creates a text file from the level data.
         """
         self.create_text()
-        if os.path.isfile(filename + ".txt"):
+        filename = filename + (".txt" if prefix else "")
+        if os.path.isfile(filename):
             if overwrite_policy == 0:
                 raise OSError("File already exists!")
-            elif overwrite_policy == 1:
+            if overwrite_policy == 1:
                 os.rename(filename + ".txt", filename + ".old.txt")
                 print(f"Old version backed up! Renamed to {filename + '.lvl.old'}")
-        with open(output_folder + filename + ".txt", "w") as outfile:
+        with open(output_folder + filename, "w") as outfile:
             outfile.write(self.level_data["text"])
-        print(f"INFO: Created text file {filename[:filename.index('.')]}.txt")
+        if self.verbose:
+            print(f"INFO: Created text file {filename}")
         return True
 
-    def write_binary(self, filename: str, output_folder="./", overwrite_policy=0) -> bool:
+    def write_binary(self, filename: str, output_folder="./", overwrite_policy=0, prefix=True) -> bool:
         """
         Creates a binary file from the level data.
         """
         self.create_binary()
-        if os.path.isfile(filename + ".lvl"):
+        filename = filename + (".lvl" if prefix else "")
+        if os.path.isfile(filename):
             if overwrite_policy == 0:
                 raise OSError("File already exists!")
             elif overwrite_policy == 1:
-                os.rename(filename + ".lvl", filename + ".old.lvl")
+                os.rename(filename, filename + ".old.lvl")
                 print(f"Old version backed up! Renamed to {filename + '.old.lvl'}")
-        with open(output_folder + filename + '.lvl', "w+b") as outfile:
+        with open(output_folder + filename, "w+b") as outfile:
             outfile.write(self.level_data["binary"])
-        print("INFO: Wrote", len(self.level_data["binary"]), "bytes to", filename + '.lvl')
+        if self.verbose:
+            print("INFO: Wrote", len(self.level_data["binary"]), "bytes to", filename)
         return True
 
     def create_game_data(self) -> None:
@@ -419,7 +433,7 @@ if __name__ == "__main__":
 
     subparsers = parser.add_subparsers(dest='act', help='sub-commands')
     base_parser.add_argument('-f', '--force', action='store_true', help="force overwriting")
-    base_parser.add_argument('-v', '--verbose', action='store_true')
+    base_parser.add_argument('-v', '--verbose', action='store_true', default=False)
 
     A_parser = subparsers.add_parser('compile', help='compiles text', parents=[base_parser])
     A_parser.add_argument('-t', '--title', required=True, help="title of levelset, required")
@@ -431,13 +445,14 @@ if __name__ == "__main__":
     B_parser = subparsers.add_parser('decompile', help='decompiles binary', parents=[base_parser])
     B_parser.add_argument('-o', '--output', required=False)
     args = parser.parse_args()
+    tempLevelSet = LevelSet(args.filename, "file", verbose=args.verbose)
     if args.act == "compile":
-        tempLevelSet = LevelSet(args.filename, "file")
+        output = args.output if args.output else args.filename[:args.filename.index(".")] + ".lvl"
         tempLevelSet.meta["title"] = args.title
         tempLevelSet.meta["description"] = args.desc if args.desc else "No description."
         tempLevelSet.meta["year"] = args.year if args.year else datetime.now().year
         tempLevelSet.meta["author"] = args.author if args.author else "Unknown Author"
-        tempLevelSet.write_binary(args.filename[:args.filename.index(".")])
+        tempLevelSet.write_binary(output, overwrite_policy=2 if args.force else 0, prefix=False)
     elif args.act == "decompile":
-        tempLevelSet = LevelSet(args.filename, "file")
-        tempLevelSet.write_text(args.filename[:args.filename.index(".")])
+        output = args.output if args.output else args.filename[:args.filename.index(".")] + ".txt"
+        tempLevelSet.write_text(output, overwrite_policy=2 if args.force else 0, prefix=False)
