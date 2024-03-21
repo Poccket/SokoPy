@@ -39,8 +39,8 @@ meta = {
 
 currlvl = 0
 
-width = 800
-height = 480
+width = 1600
+height = 960
 wconst = (width / 2) - (32 * grid_size / 2)
 hconst = (height / 2) - (32 * grid_size / 2)
 CAMR = 0
@@ -113,7 +113,7 @@ def text_len(text, size):
     return pygame.font.SysFont("Arial", size, bold=True).size(text)[0]
 
 
-for s in resources["sprite"].keys():
+for s in resources["sprite"]:
     resources["sprite"][s] = pygame.transform.scale(resources["sprite"][s], (32, 32))
 
 
@@ -122,7 +122,6 @@ def load_save(filename):
     global meta
     meta["title"] = fileset.meta["title"]
     meta["description"] = fileset.meta["description"]
-    print(meta)
     fileset.decompress_data()
     filetxt = fileset.level_data["uncompressed"]
     for x, lvl in enumerate(filetxt):
@@ -169,7 +168,7 @@ def commit_save():
             for row in lvl:
                 f.write(f"{row}\n")
     temp_lvl = convert.LevelSet("temp.txt", "file", meta["title"], meta["description"])
-    temp_lvl.write_binary("temp", output_folder="levels/Custom Levels")
+    temp_lvl.write_binary("temp", output_folder="levels/Custom Levels/")
     os.remove("temp.txt")
 
 
@@ -208,7 +207,11 @@ largestMenu = 0
 largestTool = 0
 CURRSEL = 3
 PLAYER = None
-lvlfiles = list(level.get_levelpacks(directory="levels/Custom Levels/").keys())
+try:
+    lvlfiles = list(level.get_levelpacks(directory="levels/Custom Levels/").keys())
+except FileNotFoundError:
+    os.makedirs("./levels/Custom Levels")
+    lvlfiles = list(level.get_levelpacks(directory="levels/Custom Levels/").keys())
 lvlfiles.sort()
 loadLevels = False
 changeTitle = False
