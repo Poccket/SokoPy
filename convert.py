@@ -2,7 +2,7 @@ import sys
 import os
 from datetime import datetime
 
-VERSION = "2.0"
+VERSION = "3.0"
 # This file can be used to convert sokoban levels in a format like below:
 #    ; Level 1
 #       ###
