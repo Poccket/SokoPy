@@ -18,6 +18,16 @@ VERSION = "2.0"
 #     #######
 # into a custom binary levelpack format.
 
+# It works as such:
+# First four bytes are dedicated to a short string indentifying the file.
+# In the most recent version, this is '2KBN'
+# Next is the title of the levelpack, the description, the year of release, and the author.
+# All of the metadata ends with an EOT character (0x03)
+# A 1 byte integer indicating how many levels are in the levelpack follows the metadata sector
+# To finish off the metadata, a file record, which is a series of 2-byte integers.
+# These are the offsets for the levels, indicating where in the file they're located.
+# After this is simply level data, all stored in nibbles. (see below)
+# Each level ends with 0b1111, and is followed immediately by the next level
 
 BLOCKS_TO_NIBBLE = {
     "!": "0000",  # New line
@@ -28,7 +38,13 @@ BLOCKS_TO_NIBBLE = {
     ".": "0110",  # Target
     "*": "0111",  # Crate on Target
     "+": "1000"   # Player on Target
-    #     1101      Next nibble is number of times to repeat the nibble after.
+    #     1101      Repeat Nibble
+    #               Indicates that there's 4-18 blocks in a row, using three nibbles
+    #                1101  |  1001  |  0100
+    #               Repeat | Length | Block
+    #               Since it uses three nibbles, we don't use it for 1-3 blocks in a row,
+    #               and since that'd leave 0b0001-0b0011 unused, we add 3 after conversion.
+    #               That makes 0b0001 = 4, and 0b1111 = 19.
     #     1111      End Of Level Data
 }
 NUM_TO_BLOCKS = [
@@ -43,7 +59,7 @@ def bytes_to_bitstring(b: bytes, n=None) -> str:
     Converts bytes into a string representation.
     """
     # https://stackoverflow.com/questions/60579197/python-bytes-to-bit-string
-    s = ''.join(f'{x:08b}' for x in b) # Fucking Black Magic
+    s = ''.join(f'{x:08b}' for x in b)
     return s if n is None else s[:n + n // 8 + (0 if n % 8 else -1)]
 
 
@@ -61,9 +77,9 @@ def bitstring_to_bytes(s: str) -> bytes:
 
 class LevelSet:
     """
-    This class represents a collection of metadata, and various states of\n
+    This class represents a collection of metadata, and various states of
     level data.
-    It stores an uncompressed version, a text version, a compressed version,\n
+    It stores an uncompressed version, a text version, a compressed version,
     and a binary version of the level data for this set.
     It can also create a text file or binary file for the levelset.
     """
@@ -127,11 +143,11 @@ class LevelSet:
             dash = old_title.index("-")
             self.meta["year"] = int(old_title[open_paren+1:dash])
             closing_paren = old_title.index(")")
-            self.meta["author"] = old_title[dash+1:closing_paren]
+            self.meta["author"] = old_title[dash+2:closing_paren]
 
     def process_binary(self) -> None:
         """
-        Processes a binary format of a levelset into the class, including the\n
+        Processes a binary format of a levelset into the class, including the
         title, description, etc.
         This replaces all data in the class! Be warned.
         """
@@ -140,25 +156,42 @@ class LevelSet:
             if self.verbose:
                 print("INFO: Unzipping data...")
             self.level_offsets = []
-            if self.level_data["binary"][:4] != b"SKBN":
-                raise ValueError("File is not a level file!")
-            # Grab title and description
             temp = b""
-            return_count = 0
             offset = 0
-            # TODO: Grab author and year once implemented properly.
-            for offset, byte in enumerate(self.level_data["binary"][4:]):
-                byte = byte.to_bytes(1, sys.byteorder)
-                if byte == b"\n":
-                    return_count += 1
-                    if return_count == 1:
-                        self.meta["title"] = temp.decode()
+            if self.level_data["binary"][:4] == b"SKBN":
+                self.meta["file_type"] = "SKBN"
+                return_count = 0
+                for offset, byte in enumerate(self.level_data["binary"][4:]):
+                    byte = byte.to_bytes(1, sys.byteorder)
+                    if byte == b"\n":
+                        return_count += 1
+                        if return_count == 1:
+                            self.meta["title"] = temp.decode()
+                        else:
+                            self.meta["description"] = temp.decode()
+                            break
+                        temp = b""
                     else:
-                        self.meta["description"] = temp.decode()
-                        break
-                    temp = b""
-                else:
-                    temp += byte
+                        temp += byte
+                self.update_title()
+            elif self.level_data["binary"][:4] == b"2KBN":
+                self.meta["file_type"] = "2KBN"
+                meta_data = []
+                for offset, byte in enumerate(self.level_data["binary"][4:]):
+                    byte = byte.to_bytes(1, sys.byteorder)
+                    if byte == b"\x03":
+                        meta_data += [temp.decode()]
+                        if len(meta_data) == 4:
+                            break
+                        temp = b""
+                    else:
+                        temp += byte
+                self.meta["title"] = meta_data[0]
+                self.meta["description"] = meta_data[1]
+                self.meta["year"] = meta_data[2]
+                self.meta["author"] = meta_data[3]
+            else:
+                raise ValueError("File is not a level file!")
             # This is how many levels are in the set
             self.meta["length"] = self.level_data["binary"][offset+5]
             offset += 6
@@ -259,7 +292,6 @@ class LevelSet:
         Processes the uncompressed level data into a list of strings\n
         representing byte data (referred to as compressed level data)
         """
-        # TODO: Clean up this code, the nesting is way too deep.
         # Legacy code! Touch this at your own peril.
         if (self.level_data["compressed"] in [None, []] or
             self.last_update["compressed"]<self.last_update["uncompressed"]):
@@ -311,11 +343,16 @@ class LevelSet:
                 if len(lvl_binary) % 8:
                     lvl_binary += "0000"
                 if crate_count != target_count:
-                    print("WARNING: Level may be incorrect!\n",
-                        f"    Filename: {sys.argv[1]}, Level #: {level_number}\n",
-                        f"   {crate_count} crates seen, but {target_count} targets seen.\n",
-                        "Press ENTER to continue, CTRL+C to quit execution")
-                    input()
+                    if __name__ == '__main__':
+                        print("WARNING: Level may be incorrect!\n",
+                            f"    Filename: {sys.argv[1]}, Level #: {level_number}\n",
+                            f"   {crate_count} crates seen, but {target_count} targets seen.\n",
+                            "Press ENTER to continue, CTRL+C to quit execution")
+                        input()
+                    else:
+                        print("WARNING: Level may be incorrect!\n",
+                            f"   Level #: {level_number}\n",
+                            f"   {crate_count} crates seen, but {target_count} targets seen.\n")
                 if self.verbose:
                     print(f"INFO: Level {level_number} finished at {len(lvl_binary)/8} bytes")
                 self.level_data["compressed"] += [lvl_binary]
@@ -351,8 +388,7 @@ class LevelSet:
             level_size = int(len(level)/8)
             master_record += [total_offset]
             total_offset += level_size
-        #meta_data = f"2KBN{self.title}\n{self.desc}\n{self.year}\n{self.author}\n"
-        meta_data = f"SKBN{self.meta['title']} ({self.meta['year']} - {self.meta['author']})\n{self.meta['description']}\n"
+        meta_data = f"2KBN{self.meta['title']}\x03{self.meta['description']}\x03{self.meta['year']}\x03{self.meta['author']}\x03"
         bitstring = bytes_to_bitstring(bytes(meta_data, 'ascii')) + format(len(self.level_data["compressed"]), '08b')
         master_record_str = ""
         master_offset = int(len(bitstring)/8) + (len(master_record)*2)
@@ -362,7 +398,7 @@ class LevelSet:
         bitstring += level_data
         self.level_data["binary"] = bitstring_to_bytes(bitstring)
         if len(self.level_data["binary"]) < 4:
-            raise Exception("Something went wrong! File size is abnormally small.")
+            raise RuntimeError("Something went wrong! File size is abnormally small.")
         if self.verbose:
             print(f"INFO: Finished compressing at {len(self.level_data['binary'])} bytes")
 
@@ -378,7 +414,7 @@ class LevelSet:
             if overwrite_policy == 1:
                 os.rename(filename + ".txt", filename + ".old.txt")
                 print(f"Old version backed up! Renamed to {filename + '.lvl.old'}")
-        with open(output_folder + filename, "w") as outfile:
+        with open(output_folder + filename, "w", encoding='UTF-8') as outfile:
             outfile.write(self.level_data["text"])
         if self.verbose:
             print(f"INFO: Created text file {filename}")
@@ -420,7 +456,6 @@ class LevelSet:
             level_data = [[]]
         return
 
-# TODO: Make a nicer interface for the script.
 if __name__ == "__main__":
     import argparse
     print(f"SokoPy conversion script v{VERSION} by @Poccket")
@@ -444,15 +479,47 @@ if __name__ == "__main__":
 
     B_parser = subparsers.add_parser('decompile', help='decompiles binary', parents=[base_parser])
     B_parser.add_argument('-o', '--output', required=False)
+
+    C_parser = subparsers.add_parser('info', help='prints info', parents=[base_parser])
+
+    D_parser = subparsers.add_parser('update', help='updates meta data', parents=[base_parser])
+    D_parser.add_argument('-t', '--title', required=False, help="title of levelset, optional")
+    D_parser.add_argument('-d', '--desc', required=False, help="description of levelset, optional")
+    D_parser.add_argument('-y', '--year', required=False, help="year of release, optional")
+    D_parser.add_argument('-a', '--author', required=False, help="author of levelset, optional")
+    D_parser.add_argument('-o', '--output', required=False)
+
     args = parser.parse_args()
     tempLevelSet = LevelSet(args.filename, "file", verbose=args.verbose)
     if args.act == "compile":
-        output = args.output if args.output else args.filename[:args.filename.index(".")] + ".lvl"
+        output = args.output if args.output else args.filename[:args.filename.rindex(".")] + ".lvl"
         tempLevelSet.meta["title"] = args.title
         tempLevelSet.meta["description"] = args.desc if args.desc else "No description."
         tempLevelSet.meta["year"] = args.year if args.year else datetime.now().year
         tempLevelSet.meta["author"] = args.author if args.author else "Unknown Author"
         tempLevelSet.write_binary(output, overwrite_policy=2 if args.force else 0, prefix=False)
+        original_size = os.path.getsize(args.filename)
+        compressed_size = os.path.getsize(output)
+        print(f"Compressed from {original_size} bytes to {compressed_size} bytes. ({100-round(compressed_size/original_size*100, 1)}% reduction)")
     elif args.act == "decompile":
-        output = args.output if args.output else args.filename[:args.filename.index(".")] + ".txt"
+        output = args.output if args.output else args.filename[:args.filename.rindex(".")] + ".txt"
         tempLevelSet.write_text(output, overwrite_policy=2 if args.force else 0, prefix=False)
+    elif args.act == "info":
+        print(f'File: {args.filename} {round(os.path.getsize(args.filename)/1000,1)}kB type {tempLevelSet.meta["file_type"]}\n',
+              f'{tempLevelSet.meta["title"]} by {tempLevelSet.meta["author"]} ({tempLevelSet.meta["year"]})\n',
+              f'{tempLevelSet.meta["description"]}\n',
+              f'{len(tempLevelSet)} levels')
+        if args.verbose:
+            print('File Record:')
+            print([format(offset, '#06x') for offset in tempLevelSet.level_offsets])
+    elif args.act == "update":
+        output = args.output if args.output else args.filename[:args.filename.rindex(".")] + ".lvl"
+        if args.title:
+            tempLevelSet.meta["title"] = args.title
+        if args.desc:
+            tempLevelSet.meta["description"] = args.desc
+        if args.year:
+            tempLevelSet.meta["year"] = args.year
+        if args.author:
+            tempLevelSet.meta["author"] = args.author
+        tempLevelSet.write_binary(output, overwrite_policy=2 if args.force else 0, prefix=False)
